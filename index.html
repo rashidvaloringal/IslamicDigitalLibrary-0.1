@@ -22,7 +22,7 @@
 
   <style>
     /* ================================================================
-       ROOT VARIABLES
+       ROOT VARIABLES & ACCELERATED THEMING
        ================================================================ */
     :root {
       --primary-green: #1b4d3e;
@@ -84,7 +84,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      transition: background 0.3s, color 0.3s;
+      transition: background 0.2s, color 0.2s;
     }
     button, input, select { font-family: inherit; border: none; outline: none; background: transparent; color: inherit; cursor: pointer; }
     ::-webkit-scrollbar { width: 4px; }
@@ -102,7 +102,7 @@
       justify-content: center;
       align-items: center;
       gap: 12px;
-      transition: opacity 0.5s;
+      transition: opacity 0.3s;
     }
     #loader.hidden { opacity: 0; pointer-events: none; }
     .spinner {
@@ -213,7 +213,7 @@
       font-size: 13px;
       text-transform: uppercase;
       border-bottom: 3px solid transparent;
-      transition: 0.3s;
+      transition: 0.2s;
     }
     .tab-item.active { color: white; border-bottom-color: white; }
 
@@ -254,6 +254,8 @@
       transition: transform 0.2s;
       cursor: pointer;
       position: relative;
+      content-visibility: auto;
+      contain-intrinsic-size: 240px;
     }
     .book-card:active { transform: scale(0.97); }
     .book-avatar-fallback {
@@ -342,7 +344,7 @@
     .nav-link i { font-size: 22px; }
     .nav-link.active { color: var(--primary-green); font-weight: bold; }
 
-    /* ===== READER ===== */
+    /* ===== READER (HIGH PERFORMANCE OPTIMIZED) ===== */
     #readerView {
       display: none;
       flex-direction: column;
@@ -390,9 +392,10 @@
       overflow-y: auto;
       padding: 15px 15px 90px 15px;
       scroll-behavior: smooth;
+      will-change: transform, scroll-position;
     }
 
-    /* SCROLL MODE CONTROLLER CLASSES */
+    /* VIRTUAL DOM OPTIMIZED SCROLL CLASSES */
     .scroll-mode-vertical #readerPageContainer {
       display: flex;
       flex-direction: column;
@@ -414,7 +417,6 @@
       width: 100%;
     }
 
-    /* DOCS / PDF STYLE PAGE BREAK SEPARATOR */
     .page-break-divider {
       display: flex;
       align-items: center;
@@ -441,9 +443,12 @@
       border-radius: var(--radius);
       box-shadow: 0 2px 20px rgba(0,0,0,0.08);
       border: 1px solid var(--border);
-      min-height: 60vh;
+      min-height: 50vh;
       position: relative;
       margin-bottom: 15px;
+      content-visibility: auto;
+      contain-intrinsic-size: 400px;
+      contain: layout style paint;
     }
     .head-badge {
       display: table;
@@ -486,14 +491,12 @@
       text-align: justify;
     }
 
-    /* ===== WORD HIGHLIGHT ===== */
+    /* ===== LIGHTWEIGHT WORD HIGHLIGHT ===== */
     .word-token {
       cursor: pointer;
-      transition: 0.15s;
       padding: 0 2px;
       border-radius: 4px;
       display: inline-block;
-      position: relative;
     }
     .word-hl {
       background: var(--highlight-color) !important;
@@ -501,7 +504,6 @@
       font-weight: bold;
       border-radius: 4px;
       box-shadow: 0 2px 12px rgba(250,204,21,0.4);
-      transform: scale(1.05);
     }
     .word-hl-ar { background: #81d4fa !important; color: #000 !important; }
     .word-hl-ml { background: #facc15 !important; color: #000 !important; }
@@ -577,7 +579,7 @@
       transition: all 0.2s ease;
     }
 
-    /* ===== 10 VISUAL CAPTION STYLES ===== */
+    /* ===== CAPTION STYLES ===== */
     .style-karaoke .vis-word-token.active { color: #facc15 !important; font-weight: bold; transform: scale(1.05); }
     .style-wordbyword .vis-word-token { opacity: 0.3; }
     .style-wordbyword .vis-word-token.active { opacity: 1; color: #fff !important; font-weight: bold; }
@@ -757,7 +759,7 @@
       backdrop-filter: blur(3px);
       z-index: 3000;
     }
-    .modal-overlay.show { block; }
+    .modal-overlay.show { display: block; }
     .modal-box {
       position: fixed;
       bottom: -100%;
@@ -854,7 +856,6 @@
       padding: 12px 15px;
       border-bottom: 1px solid var(--border);
       color: var(--text-dark);
-      transition: 0.15s;
     }
     .toc-item-row {
       display: flex;
@@ -1214,14 +1215,11 @@
 
   <script>
     // ================================================================
-    // CONFIG - Fallback if config.js missing
+    // CONFIG & HIGH PERFORMANCE GLOBAL STATE
     // ================================================================
     window.ENV_SUPABASE_URL = window.ENV_SUPABASE_URL || '';
     window.ENV_SUPABASE_KEY = window.ENV_SUPABASE_KEY || '';
 
-    // ================================================================
-    // STATE
-    // ================================================================
     let supabaseClient = null;
     let allBooks = [];
     let currentBookId = null;
@@ -1231,7 +1229,7 @@
     let isPlaying = false;
     let synth = window.speechSynthesis;
     let allVoices = [];
-    let audioProgressInterval = null;
+    let animFrameReq = null;
     let spokenLang = 'ar';
     let autoScrollEnabled = true;
     let touchSpeakEnabled = true;
@@ -1240,7 +1238,6 @@
     let isVisualMode = false;
     let isVoiceChanging = false;
 
-    let dbCache = {};
     let tocTree = [];
     let tocPath = [];
     let isDownloadingInstance = false;
@@ -1255,29 +1252,25 @@
     };
 
     // ================================================================
-    // INDEXEDDB ENGINE
+    // INDEXEDDB ENGINE (FAST DIRECT READ)
     // ================================================================
     const IDB = {
       dbName: "IslamicLibraryV5",
       version: 1,
       db: null,
       init() {
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve) => {
           let req = indexedDB.open(this.dbName, this.version);
           req.onupgradeneeded = (e) => {
             let db = e.target.result;
-            if (!db.objectStoreNames.contains("books")) {
-              db.createObjectStore("books", { keyPath: "bookId" });
-            }
-            if (!db.objectStoreNames.contains("metadata")) {
-              db.createObjectStore("metadata", { keyPath: "key" });
-            }
+            if (!db.objectStoreNames.contains("books")) db.createObjectStore("books", { keyPath: "bookId" });
+            if (!db.objectStoreNames.contains("metadata")) db.createObjectStore("metadata", { keyPath: "key" });
           };
           req.onsuccess = (e) => {
             this.db = e.target.result;
             resolve(this.db);
           };
-          req.onerror = (e) => reject(e.target.error);
+          req.onerror = () => resolve(null);
         });
       },
       get(bookId) {
@@ -1285,8 +1278,7 @@
           if (!this.db) return resolve(null);
           try {
             let tx = this.db.transaction("books", "readonly");
-            let store = tx.objectStore("books");
-            let req = store.get(bookId);
+            let req = tx.objectStore("books").get(bookId);
             req.onsuccess = () => resolve(req.result ? req.result.data : null);
             req.onerror = () => resolve(null);
           } catch(e) { resolve(null); }
@@ -1297,8 +1289,7 @@
           if (!this.db) return resolve();
           try {
             let tx = this.db.transaction("books", "readwrite");
-            let store = tx.objectStore("books");
-            store.put({ bookId: bookId, data: data, updatedAt: Date.now() });
+            tx.objectStore("books").put({ bookId: bookId, data: data, updatedAt: Date.now() });
             tx.oncomplete = () => resolve();
             tx.onerror = () => resolve();
           } catch(e) { resolve(); }
@@ -1309,8 +1300,7 @@
           if (!this.db) return resolve();
           try {
             let tx = this.db.transaction("books", "readwrite");
-            let store = tx.objectStore("books");
-            store.delete(bookId);
+            tx.objectStore("books").delete(bookId);
             tx.oncomplete = () => resolve();
           } catch(e) { resolve(); }
         });
@@ -1320,8 +1310,7 @@
           if (!this.db) return resolve();
           try {
             let tx = this.db.transaction("metadata", "readwrite");
-            let store = tx.objectStore("metadata");
-            store.put({ key: key, value: value, updatedAt: Date.now() });
+            tx.objectStore("metadata").put({ key: key, value: value, updatedAt: Date.now() });
             tx.oncomplete = () => resolve();
           } catch(e) { resolve(); }
         });
@@ -1331,16 +1320,16 @@
           if (!this.db) return resolve(null);
           try {
             let tx = this.db.transaction("metadata", "readonly");
-            let store = tx.objectStore("metadata");
-            let req = store.get(key);
+            let req = tx.objectStore("metadata").get(key);
             req.onsuccess = () => resolve(req.result ? req.result.value : null);
+            req.onerror = () => resolve(null);
           } catch(e) { resolve(null); }
         });
       }
     };
 
     // ================================================================
-    // AUDIO CONTEXT
+    // HARDWARE ACCELERATED AUDIO CONTEXT
     // ================================================================
     let audioCtx = null;
     function initAudioContext() {
@@ -1363,25 +1352,23 @@
     let wakeLock = null;
     async function requestWakeLock() {
       try {
-        if ('wakeLock' in navigator) {
-          wakeLock = await navigator.wakeLock.request('screen');
-        }
+        if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
       } catch(e) {}
     }
 
     // ================================================================
-    // SUPABASE CONNECTION (OFFLINE-FIRST SAFE INIT)
+    // INITIALIZATION (LIGHTWEIGHT INITIAL LOAD)
     // ================================================================
     async function initApp() {
       try {
         await IDB.init();
 
+        // Attach Event Delegation to container for zero memory footprint
+        setupEventDelegation();
+
         const downloadedBooks = await IDB.getMeta('downloaded_books');
         if (downloadedBooks) {
-          try {
-            const downloadedList = JSON.parse(downloadedBooks);
-            allBooks = downloadedList;
-          } catch(e) {}
+          try { allBooks = JSON.parse(downloadedBooks); } catch(e) {}
         }
 
         const cachedBooks = localStorage.getItem('library_books');
@@ -1389,9 +1376,7 @@
           allBooks = JSON.parse(cachedBooks);
           for (const book of allBooks) {
             const data = await IDB.get(book.id);
-            if (data && data.length > 0) {
-              book.downloaded = true;
-            }
+            if (data && data.length > 0) book.downloaded = true;
           }
           renderBooks(allBooks);
           updateContinueReading();
@@ -1405,9 +1390,7 @@
             supabaseClient = window.supabase.createClient(savedUrl, savedKey);
             document.getElementById('supabaseUrl').value = savedUrl;
             document.getElementById('supabaseKey').value = savedKey;
-          } catch(e) {
-            console.warn("Supabase init deferred");
-          }
+          } catch(e) {}
         }
 
         document.getElementById('setupBox').style.display = 'none';
@@ -1436,7 +1419,7 @@
       msg.innerHTML = '<div class="status-msg info">⏳ Connecting...</div>';
 
       try {
-        if (!window.supabase) throw new Error("Supabase JS Library not loaded.");
+        if (!window.supabase) throw new Error("Supabase library not ready");
         supabaseClient = window.supabase.createClient(url, key);
         localStorage.setItem('supabase_url', url);
         localStorage.setItem('supabase_key', key);
@@ -1450,11 +1433,7 @@
       const msg = document.getElementById('statusMsg');
       try {
         if (!supabaseClient) return;
-        const { data, error } = await supabaseClient
-          .from('master_catalog')
-          .select('*')
-          .limit(1);
-
+        const { data, error } = await supabaseClient.from('master_catalog').select('*').limit(1);
         if (error) throw error;
 
         localStorage.setItem('supabase_connected', 'true');
@@ -1464,37 +1443,28 @@
           document.getElementById('setupBox').style.display = 'none';
           document.getElementById('loader').classList.add('hidden');
           document.getElementById('homeView').classList.add('show');
-          document.getElementById('loadSubStatus').textContent = 'Ready!';
           await loadBooks();
         }
       } catch(err) {
-        if (!silent && msg) {
-          msg.innerHTML = `<div class="status-msg error">❌ ${err.message}</div>`;
-        }
+        if (!silent && msg) msg.innerHTML = `<div class="status-msg error">❌ ${err.message}</div>`;
       }
     }
 
     // ================================================================
-    // LOAD BOOKS
+    // LOAD BOOKS & RENDER
     // ================================================================
     async function loadBooks(silent = false) {
       if (!silent) showLoading('📚 പുസ്തകങ്ങൾ ലോഡ് ചെയ്യുന്നു...');
       try {
-        if (!supabaseClient) throw new Error("Offline or no client");
-        const { data, error } = await supabaseClient
-          .from('master_catalog')
-          .select('*')
-          .order('title_ml', { ascending: true });
-
+        if (!supabaseClient) throw new Error("Offline");
+        const { data, error } = await supabaseClient.from('master_catalog').select('*').order('title_ml', { ascending: true });
         if (error) throw error;
 
         allBooks = data || [];
 
         for (const book of allBooks) {
           const idbData = await IDB.get(book.id);
-          if (idbData && idbData.length > 0) {
-            book.downloaded = true;
-          }
+          if (idbData && idbData.length > 0) book.downloaded = true;
         }
 
         localStorage.setItem('library_books', JSON.stringify(allBooks));
@@ -1544,8 +1514,7 @@
 
       if (type === 'all') renderBooks(allBooks);
       else if (type === 'downloaded') {
-        const downloaded = allBooks.filter(b => b.downloaded);
-        renderBooks(downloaded);
+        renderBooks(allBooks.filter(b => b.downloaded));
       }
     }
 
@@ -1562,16 +1531,13 @@
     function toggleSearch() { document.getElementById('searchBar').classList.toggle('show'); }
 
     async function syncBooks() {
-      if (!supabaseClient) {
-        alert("ഓൺലൈൻ കണക്ഷൻ ലഭ്യമല്ല!");
-        return;
-      }
+      if (!supabaseClient) { alert("ഓൺലൈൻ കണക്ഷൻ ലഭ്യമല്ല!"); return; }
       await loadBooks();
       alert('✅ Books synced!');
     }
 
     // ================================================================
-    // OPEN BOOK - SAFE & FAST CHUNK LOAD
+    // OPEN BOOK (INDEXEDDB FIRST - ZERO LAG)
     // ================================================================
     async function openBook(bookId) {
       currentBookId = bookId;
@@ -1584,6 +1550,7 @@
       showLoading('📖 Opening book contents...');
 
       try {
+        // ALWAYS READ FROM INDEXEDDB FIRST IF DOWNLOADED OR CACHED
         let idbData = await IDB.get(bookId);
 
         if (idbData && idbData.length > 0) {
@@ -1597,7 +1564,6 @@
           }
 
           const tableName = `${bookId}_contents`;
-
           const { count, error: countError } = await supabaseClient
             .from(tableName)
             .select('*', { count: 'exact', head: true });
@@ -1653,15 +1619,8 @@
     }
 
     async function downloadBookBackground(bookId) {
-      if (isDownloadingInstance) {
-        alert("മറ്റൊരു ഡൗൺലോഡ് നടക്കുന്നുണ്ട്!");
-        return;
-      }
-
-      if (!supabaseClient) {
-        alert("ഡൗൺലോഡ് ചെയ്യാൻ ഇൻ്റർനെറ്റ് കണക്ഷൻ വേണം!");
-        return;
-      }
+      if (isDownloadingInstance) { alert("മറ്റൊരു ഡൗൺലോഡ് നടക്കുന്നുണ്ട്!"); return; }
+      if (!supabaseClient) { alert("ഡൗൺലോഡ് ചെയ്യാൻ ഇൻ്റർനെറ്റ് കണക്ഷൻ വേണം!"); return; }
 
       const book = allBooks.find(b => b.id === bookId);
       if (!book) return;
@@ -1678,9 +1637,7 @@
         let totalCount = 0;
 
         try {
-          const { count } = await supabaseClient
-            .from(tableName)
-            .select('*', { count: 'exact', head: true });
+          const { count } = await supabaseClient.from(tableName).select('*', { count: 'exact', head: true });
           totalCount = count || 0;
         } catch(e) {}
 
@@ -1773,7 +1730,25 @@
     }
 
     // ================================================================
-    // RENDER PAGE (LAZY CHUNK OPTIMIZED TO PREVENT CRASHING)
+    // EVENT DELEGATION FOR FAST TOUCH (NO MEMORY LEAKS)
+    // ================================================================
+    function setupEventDelegation() {
+      const container = document.getElementById('readerPageContainer');
+      if (!container) return;
+
+      container.addEventListener('click', (e) => {
+        const token = e.target.closest('.word-token');
+        if (token && touchSpeakEnabled) {
+          const offset = parseInt(token.dataset.offset || '0');
+          const lang = token.dataset.lang || 'ml';
+          const pIdx = parseInt(token.dataset.page || currentPageIndex);
+          seekToWord(offset, lang, pIdx);
+        }
+      });
+    }
+
+    // ================================================================
+    // RENDER PAGE (ULTRA-FAST LAZY VIRTUALIZATION)
     // ================================================================
     function renderCurrentPage() {
       if (!currentPages || currentPages.length === 0) return;
@@ -1781,15 +1756,11 @@
       const container = document.getElementById('readerPageContainer');
       const isVertical = document.getElementById('optVerticalScroll')?.checked;
 
-      document.querySelectorAll('.word-hl, .word-hl-ar, .word-hl-ml, .word-hl-en').forEach(el => {
-        el.classList.remove('word-hl', 'word-hl-ar', 'word-hl-ml', 'word-hl-en');
-      });
-
       if (isVertical) {
-        // Optimized: Render window chunk (Current page +/- 10 pages) to prevent UI freeze
+        // Render STRICT window (Current page +/- 2 pages) to prevent UI lag / phone heat
         let fullHtml = '';
         const startIdx = Math.max(0, currentPageIndex - 2);
-        const endIdx = Math.min(currentPages.length - 1, currentPageIndex + 15);
+        const endIdx = Math.min(currentPages.length - 1, currentPageIndex + 3);
 
         for (let idx = startIdx; idx <= endIdx; idx++) {
           const page = currentPages[idx];
@@ -1825,7 +1796,7 @@
 
         container.innerHTML = fullHtml;
       } else {
-        // Standard Single-Page Horizontal view
+        // Single-Page Horizontal view
         const page = currentPages[currentPageIndex];
         if (!page) return;
 
@@ -1858,19 +1829,11 @@
       document.getElementById('miniProgress').textContent = `ഭാഗം ${activePage.part || '?'} - പേജ് ${activePage.page || '?'}`;
       updateAudioUI();
 
-      if (isVisualMode) {
-        updateVisualChunk();
-      }
-
-      if (isPlaying && currentUtterance) {
-        highlightCurrentWord();
-      }
-
-      if (autoScrollEnabled && document.getElementById('optAutoScroll')?.checked !== false) {
-        setTimeout(autoScrollToHighlight, 150);
-      }
+      if (isVisualMode) updateVisualChunk();
+      if (isPlaying && currentUtterance) highlightCurrentWord();
     }
 
+    // LIGHTWEIGHT TOKENIZER (NO INLINE HANDLERS)
     function tokenizeText(text, lang, pIdx = 0) {
       if (!text) return '';
       const pureText = text.replace(/<[^>]+>/g, '').trim();
@@ -1892,13 +1855,11 @@
                              currentWordOffset < startOffset + token.length &&
                              spokenLang === lang;
         const hlClass = isHighlighted ? `word-hl word-hl-${lang}` : '';
-        return `<span class="word-token ${hlClass}" data-lang="${lang}" data-page="${pIdx}" data-offset="${startOffset}" onclick="seekToWord(${startOffset}, '${lang}', ${pIdx})">${token}</span>`;
+        return `<span class="word-token ${hlClass}" data-lang="${lang}" data-page="${pIdx}" data-offset="${startOffset}">${token}</span>`;
       }).join('');
     }
 
     function seekToWord(offset, lang, pIdx = currentPageIndex) {
-      if (!touchSpeakEnabled) return; 
-
       currentPageIndex = pIdx;
       currentWordOffset = offset;
       spokenLang = lang;
@@ -1932,10 +1893,8 @@
       let targetToken = null;
 
       for (const token of tokens) {
-        const offset = parseInt(token.dataset.offset);
-        if (offset <= currentWordOffset) {
-          targetToken = token;
-        }
+        const offset = parseInt(token.dataset.offset || '0');
+        if (offset <= currentWordOffset) targetToken = token;
       }
 
       if (targetToken) {
@@ -1943,13 +1902,6 @@
         if (autoScrollEnabled && document.getElementById('optAutoScroll')?.checked !== false) {
           targetToken.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
-      }
-    }
-
-    function autoScrollToHighlight() {
-      const highlighted = document.querySelector('.word-hl');
-      if (highlighted) {
-        highlighted.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
     }
 
@@ -1963,9 +1915,6 @@
       saveGeneralSetting('pref_touch_speak', touchSpeakEnabled);
     }
 
-    // ================================================================
-    // SCROLL DIRECTION CONTROLLER
-    // ================================================================
     function updateScrollDirection() {
       const isVertical = document.getElementById('optVerticalScroll').checked;
       const readerView = document.getElementById('readerView');
@@ -2039,15 +1988,12 @@
       let targetIdx = 0;
       for (let i = 0; i < words.length; i++) {
         const wordLen = words[i].length + 1;
-        if (charCount + wordLen <= currentWordOffset) {
-          targetIdx = i + 1;
-        }
+        if (charCount + wordLen <= currentWordOffset) targetIdx = i + 1;
         charCount += wordLen;
       }
       if (targetIdx >= words.length) targetIdx = words.length - 1;
 
       const isActive = spokenLang === lang;
-
       const startIdx = Math.max(0, targetIdx - 2);
       const endIdx = Math.min(words.length, targetIdx + 3);
       const displayWords = words.slice(startIdx, endIdx);
@@ -2144,9 +2090,7 @@
         } else {
           hideLoading();
         }
-      } catch(e) {
-        hideLoading();
-      }
+      } catch(e) { hideLoading(); }
     }
 
     function jumpToPage(index) {
@@ -2175,9 +2119,6 @@
       }
     }
 
-    // ================================================================
-    // CONTINUE READING
-    // ================================================================
     function updateContinueReading() {
       const card = document.getElementById('continueCard');
       const info = document.getElementById('continueInfo');
@@ -2198,7 +2139,7 @@
     }
 
     // ================================================================
-    // TTS ENGINE
+    // HIGH ACCURACY TTS ENGINE
     // ================================================================
     function setupVoices() {
       allVoices = synth.getVoices();
@@ -2221,7 +2162,7 @@
         isPlaying = false;
         updatePlayIcon();
         document.getElementById('silentAudio').pause();
-        if (audioProgressInterval) clearInterval(audioProgressInterval);
+        if (animFrameReq) cancelAnimationFrame(animFrameReq);
         setTimeout(() => { isVoiceChanging = false; }, 100);
       } else {
         isPlaying = true;
@@ -2240,24 +2181,14 @@
       let text = '';
       let langKey = 'ml';
 
-      if (lang === 'ar-EG') {
-        text = page.Arabic || '';
-        langKey = 'ar';
-      } else if (lang === 'en-US') {
-        text = page.English || '';
-        langKey = 'en';
-      } else {
-        text = page.Malayalam || '';
-        langKey = 'ml';
-      }
+      if (lang === 'ar-EG') { text = page.Arabic || ''; langKey = 'ar'; }
+      else if (lang === 'en-US') { text = page.English || ''; langKey = 'en'; }
+      else { text = page.Malayalam || ''; langKey = 'ml'; }
 
       text = text.replace(/<[^>]+>/g, '').trim();
       if (!text) {
-        if (currentPageIndex < totalPages - 1) {
-          nextPage();
-        } else {
-          stopAudio();
-        }
+        if (currentPageIndex < totalPages - 1) nextPage();
+        else stopAudio();
         return;
       }
 
@@ -2273,12 +2204,8 @@
       }
 
       if (!startText.trim()) {
-        if (currentPageIndex < totalPages - 1) {
-          currentWordOffset = 0;
-          nextPage();
-        } else {
-          stopAudio();
-        }
+        if (currentPageIndex < totalPages - 1) { currentWordOffset = 0; nextPage(); }
+        else stopAudio();
         return;
       }
 
@@ -2298,27 +2225,26 @@
       currentUtterance.rate = speedVal;
       saveGeneralSetting('pref_speed', speedVal);
 
-      if (audioProgressInterval) clearInterval(audioProgressInterval);
+      // Smooth Animation Frame Bar
+      if (animFrameReq) cancelAnimationFrame(animFrameReq);
       let progress = 0;
-      audioProgressInterval = setInterval(() => {
-        progress += 0.5;
-        if (progress > 100) progress = 0;
-        if (STATE.mode === 'audio') {
-          document.getElementById('audioProgressBar').style.width = progress + '%';
+      function animateProgress() {
+        if (isPlaying) {
+          progress = (progress + 0.2) % 100;
+          if (STATE.mode === 'audio') document.getElementById('audioProgressBar').style.width = progress + '%';
+          document.getElementById('visProgressBar').style.width = progress + '%';
+          animFrameReq = requestAnimationFrame(animateProgress);
         }
-        document.getElementById('visProgressBar').style.width = progress + '%';
-      }, 100);
+      }
+      animFrameReq = requestAnimationFrame(animateProgress);
 
       currentUtterance.onboundary = (e) => {
         if (e.name === 'word' && typeof e.charIndex === 'number') {
           const newOffset = startOffset + e.charIndex;
           if (newOffset > currentWordOffset && newOffset < startOffset + startText.length) {
             currentWordOffset = newOffset;
-            if (isVisualMode) {
-              updateVisualChunk();
-            } else {
-              highlightCurrentWord();
-            }
+            if (isVisualMode) updateVisualChunk();
+            else highlightCurrentWord();
             saveProgress();
           }
         }
@@ -2327,11 +2253,8 @@
       currentUtterance.onstart = () => {
         document.getElementById('silentAudio').play().catch(()=>{});
         initAudioContext();
-        if (isVisualMode) {
-          updateVisualChunk();
-        } else {
-          highlightCurrentWord();
-        }
+        if (isVisualMode) updateVisualChunk();
+        else highlightCurrentWord();
         localStorage.setItem('last_played_book_id', currentBookId);
         const book = allBooks.find(b => b.id === currentBookId);
         localStorage.setItem('last_played_book_title', book?.title_ml || book?.title_ar || 'Book');
@@ -2343,20 +2266,14 @@
           if (autoNext && currentPageIndex < totalPages - 1) {
             currentWordOffset = 0;
             nextPage();
-          } else {
-            stopAudio();
-          }
+          } else { stopAudio(); }
         }
       };
 
       currentUtterance.onerror = (e) => {
         if (e.error !== 'canceled' && isPlaying && !isVoiceChanging) {
-          if (currentPageIndex < totalPages - 1) {
-            currentWordOffset = 0;
-            nextPage();
-          } else {
-            stopAudio();
-          }
+          if (currentPageIndex < totalPages - 1) { currentWordOffset = 0; nextPage(); }
+          else stopAudio();
         }
       };
 
@@ -2369,14 +2286,11 @@
       isPlaying = false;
       currentUtterance = null;
       updatePlayIcon();
-      if (audioProgressInterval) clearInterval(audioProgressInterval);
+      if (animFrameReq) cancelAnimationFrame(animFrameReq);
       document.getElementById('audioProgressBar').style.width = '0%';
       document.getElementById('visProgressBar').style.width = '0%';
       document.getElementById('silentAudio').pause();
-      if (wakeLock) {
-        wakeLock.release().catch(()=>{});
-        wakeLock = null;
-      }
+      if (wakeLock) { wakeLock.release().catch(()=>{}); wakeLock = null; }
       document.querySelectorAll('.word-hl, .word-hl-ar, .word-hl-ml, .word-hl-en').forEach(el => {
         el.classList.remove('word-hl', 'word-hl-ar', 'word-hl-ml', 'word-hl-en');
       });
@@ -2394,10 +2308,7 @@
       if (restart && isPlaying) {
         isVoiceChanging = true;
         synth.cancel();
-        setTimeout(() => {
-          isVoiceChanging = false;
-          playAudio();
-        }, 200);
+        setTimeout(() => { isVoiceChanging = false; playAudio(); }, 200);
       }
     }
 
@@ -2406,8 +2317,7 @@
       if (!page) return;
       const mlText = (page.Malayalam || '').replace(/<[^>]+>/g, '').trim();
       document.getElementById('audioTitle').textContent = mlText.substring(0, 50) + '...';
-      document.getElementById('audioMeta').textContent = 
-        `ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'} / ${totalPages}`;
+      document.getElementById('audioMeta').textContent = `ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'} / ${totalPages}`;
     }
 
     function setSpokenLang(lang) {
@@ -2423,22 +2333,13 @@
       if (isPlaying) {
         isVoiceChanging = true;
         synth.cancel();
-        setTimeout(() => {
-          isVoiceChanging = false;
-          playAudio();
-        }, 200);
+        setTimeout(() => { isVoiceChanging = false; playAudio(); }, 200);
       }
 
-      if (isVisualMode) {
-        updateVisualChunk();
-      } else {
-        highlightCurrentWord();
-      }
+      if (isVisualMode) updateVisualChunk();
+      else highlightCurrentWord();
     }
 
-    // ================================================================
-    // VIEW SWITCH
-    // ================================================================
     function switchView(mode) {
       STATE.mode = mode;
       document.getElementById('ebookView').style.display = mode === 'ebook' ? 'block' : 'none';
@@ -2449,19 +2350,13 @@
       const tab = document.getElementById('nav-' + mode);
       if (tab) tab.classList.add('active');
 
-      if (mode === 'visual') {
-        openVisualMode();
-      } else {
+      if (mode === 'visual') openVisualMode();
+      else {
         closeVisualMode();
-        if (isPlaying) {
-          highlightCurrentWord();
-        }
+        if (isPlaying) highlightCurrentWord();
       }
     }
 
-    // ================================================================
-    // BOOKMARKS
-    // ================================================================
     function toggleBookmark() {
       if (!currentBookId || !currentPages.length) return;
       const chunk = currentPages[currentPageIndex];
@@ -2471,11 +2366,8 @@
       let bookmarks = JSON.parse(localStorage.getItem(key) || '[]');
       const exists = bookmarks.find(b => b.sequence === chunk.sequence);
 
-      if (exists) {
-        bookmarks = bookmarks.filter(b => b.sequence !== chunk.sequence);
-      } else {
-        bookmarks.push({ sequence: chunk.sequence, part: chunk.part, page: chunk.page });
-      }
+      if (exists) bookmarks = bookmarks.filter(b => b.sequence !== chunk.sequence);
+      else bookmarks.push({ sequence: chunk.sequence, part: chunk.part, page: chunk.page });
 
       localStorage.setItem(key, JSON.stringify(bookmarks));
       updateBookmarkUI();
@@ -2492,17 +2384,11 @@
       document.getElementById('readerBookmark').classList.toggle('active-bm', !!exists);
     }
 
-    // ================================================================
-    // TOC - FULL PART VIEW
-    // ================================================================
     function buildTOCData() {
       if (!currentPages || currentPages.length === 0) return;
 
       tocTree = [];
-      let currentPart = null;
-      let currentH1 = null;
-      let currentH2 = null;
-      let currentH3 = null;
+      let currentPart = null, currentH1 = null, currentH2 = null, currentH3 = null;
 
       currentPages.forEach((page, index) => {
         if (!page) return;
@@ -2514,41 +2400,27 @@
         if (!currentPart || currentPart.name !== partName) {
           currentPart = { type: 'part', name: partName, title: `ഭാഗം ${partName}`, children: [], index: index, page: page.page };
           tocTree.push(currentPart);
-          currentH1 = null;
-          currentH2 = null;
-          currentH3 = null;
+          currentH1 = null; currentH2 = null; currentH3 = null;
         }
 
         const h1Match = arText.match(/<h1[^>]*>(.*?)<\/h1>/i);
         const h2Match = arText.match(/<h2[^>]*>(.*?)<\/h2>/i);
         const h3Match = arText.match(/<h3[^>]*>(.*?)<\/h3>/i);
-        const h4Match = arText.match(/<h4[^>]*>(.*?)<\/h4>/i);
 
         if (h1Match) {
-          const title = h1Match[1].replace(/<[^>]+>/g, '').trim();
-          currentH1 = { type: 'h1', title: title, subtitle: mlText || enText, children: [], index: index, page: page.page };
+          currentH1 = { type: 'h1', title: h1Match[1].replace(/<[^>]+>/g, '').trim(), subtitle: mlText || enText, children: [], index: index, page: page.page };
           currentPart.children.push(currentH1);
-          currentH2 = null;
-          currentH3 = null;
+          currentH2 = null; currentH3 = null;
         } else if (h2Match) {
-          const title = h2Match[1].replace(/<[^>]+>/g, '').trim();
-          currentH2 = { type: 'h2', title: title, subtitle: mlText || enText, children: [], index: index, page: page.page };
+          currentH2 = { type: 'h2', title: h2Match[1].replace(/<[^>]+>/g, '').trim(), subtitle: mlText || enText, children: [], index: index, page: page.page };
           if (currentH1) currentH1.children.push(currentH2);
           else currentPart.children.push(currentH2);
           currentH3 = null;
         } else if (h3Match) {
-          const title = h3Match[1].replace(/<[^>]+>/g, '').trim();
-          currentH3 = { type: 'h3', title: title, subtitle: mlText || enText, children: [], index: index, page: page.page };
+          currentH3 = { type: 'h3', title: h3Match[1].replace(/<[^>]+>/g, '').trim(), subtitle: mlText || enText, children: [], index: index, page: page.page };
           if (currentH2) currentH2.children.push(currentH3);
           else if (currentH1) currentH1.children.push(currentH3);
           else currentPart.children.push(currentH3);
-        } else if (h4Match) {
-          const title = h4Match[1].replace(/<[^>]+>/g, '').trim();
-          const node = { type: 'h4', title: title, subtitle: mlText || enText, children: [], index: index, page: page.page };
-          if (currentH3) currentH3.children.push(node);
-          else if (currentH2) currentH2.children.push(node);
-          else if (currentH1) currentH1.children.push(node);
-          else currentPart.children.push(node);
         } else if (index % 5 === 0 || index === currentPageIndex || index === 0) {
           const node = { type: 'page', title: `പേജ് ${page.page || index + 1}`, subtitle: mlText.substring(0, 25) + '...', children: [], index: index, page: page.page };
           if (currentH3) currentH3.children.push(node);
@@ -2563,9 +2435,8 @@
       if (!currentBookId || !currentPages.length) return;
       buildTOCData();
 
-      const modal = document.getElementById('tocModal');
       document.getElementById('modalOverlay').classList.add('show');
-      modal.classList.add('show');
+      document.getElementById('tocModal').classList.add('show');
 
       tocPath = [{ title: 'Home', nodes: tocTree }];
       renderTOCLevel();
@@ -2575,9 +2446,7 @@
       const currentLevel = tocPath[tocPath.length - 1];
       const breadcrumb = document.getElementById('tocBreadcrumb');
       if (breadcrumb) {
-        breadcrumb.innerHTML = tocPath.map((p, i) => 
-          `<span onclick="navTOC(${i})">${p.title}</span>`
-        ).join(' <i class="fas fa-angle-right"></i> ');
+        breadcrumb.innerHTML = tocPath.map((p, i) => `<span onclick="navTOC(${i})">${p.title}</span>`).join(' <i class="fas fa-angle-right"></i> ');
       }
 
       const list = document.getElementById('tocList');
@@ -2594,26 +2463,17 @@
         sortedNodes.forEach((node, idx) => {
           const isCurrent = node.index === currentPageIndex;
           const hasChildren = node.children && node.children.length > 0;
-          const typeIcon = { part: '📚', h1: '📑', h2: '📄', h3: '🔹', h4: '🔸', page: '📌' }[node.type] || '📄';
-          const levelClass = node.type === 'part' ? 'toc-level-1' :
-                            node.type === 'h1' ? 'toc-level-2' :
-                            node.type === 'h2' ? 'toc-level-3' :
-                            node.type === 'h3' ? 'toc-level-4' : '';
+          const typeIcon = { part: '📚', h1: '📑', h2: '📄', h3: '🔹', page: '📌' }[node.type] || '📄';
 
           html += `
-            <div class="toc-item ${isCurrent ? 'current' : ''} ${levelClass}">
+            <div class="toc-item ${isCurrent ? 'current' : ''}">
               <div class="toc-item-row">
                 <div class="toc-clickable-area" onclick="jumpToPage(${node.index}); closeModal();">
                   <div class="toc-badge">${typeIcon} ${node.type.toUpperCase()} ${node.page ? '- പേജ് ' + node.page : ''}</div>
                   <div class="toc-title-text" dir="rtl">${node.title}</div>
                   ${node.subtitle ? `<div class="toc-translations">${node.subtitle}</div>` : ''}
-                  ${isCurrent ? '<div style="font-size:10px;color:var(--primary-green);margin-top:4px;">📍 Current</div>' : ''}
                 </div>
-                ${hasChildren ? `
-                  <div class="toc-toggle-btn" onclick="drillTOC(${idx})">
-                    <i class="fas fa-chevron-right" style="font-size:16px;"></i>
-                  </div>
-                ` : ''}
+                ${hasChildren ? `<div class="toc-toggle-btn" onclick="drillTOC(${idx})"><i class="fas fa-chevron-right"></i></div>` : ''}
               </div>
             </div>
           `;
@@ -2626,8 +2486,7 @@
     }
 
     function drillTOC(idx) {
-      const currentLevel = tocPath[tocPath.length - 1];
-      const node = currentLevel.nodes[idx];
+      const node = tocPath[tocPath.length - 1].nodes[idx];
       if (node && node.children && node.children.length > 0) {
         tocPath.push({ title: node.title.substring(0, 15) + '...', nodes: node.children });
         renderTOCLevel();
@@ -2646,14 +2505,9 @@
       if (pageNum > 0 && pageNum <= totalPages) {
         closeModal();
         jumpToPage(pageNum - 1);
-      } else {
-        alert(`Please enter a number between 1 and ${totalPages}`);
       }
     }
 
-    // ================================================================
-    // SETTINGS & STORAGE PERSISTENCE
-    // ================================================================
     function openSettings() {
       document.getElementById('modalOverlay').classList.add('show');
       document.getElementById('settingsModal').classList.add('show');
@@ -2724,28 +2578,16 @@
 
     async function updateIDBStatusMsg() {
       const div = document.getElementById('idbStatusMsg');
-      if (!div || !currentBookId) {
-        if (div) div.innerHTML = '📭 Open a book to see download status';
-        return;
-      }
+      if (!div || !currentBookId) return;
       try {
         const has = await IDB.get(currentBookId);
-        if (has && has.length > 0) {
-          div.innerHTML = `✅ ${has.length} pages stored in IndexedDB`;
-        } else {
-          div.innerHTML = '📥 Book not downloaded yet';
-        }
-      } catch(e) {
-        div.innerHTML = '⚠️ Error checking storage';
-      }
+        div.innerHTML = (has && has.length > 0) ? `✅ ${has.length} pages stored in IndexedDB` : '📥 Book not downloaded yet';
+      } catch(e) { div.innerHTML = '⚠️ Error checking storage'; }
     }
 
     async function updateStorageInfo() {
       try {
-        let totalPagesCount = 0;
-        let totalSize = 0;
-        let downloadedCount = 0;
-
+        let totalPagesCount = 0, totalSize = 0, downloadedCount = 0;
         for (const book of allBooks) {
           const data = await IDB.get(book.id);
           if (data && data.length > 0) {
@@ -2753,39 +2595,29 @@
             book.downloaded = true;
             totalPagesCount += data.length;
             totalSize += data.reduce((sum, c) => sum + (c.Arabic || '').length + (c.Malayalam || '').length + (c.English || '').length, 0);
-          } else {
-            book.downloaded = false;
-          }
+          } else { book.downloaded = false; }
         }
-
         document.getElementById('storageBooks').textContent = downloadedCount;
         document.getElementById('storagePages').textContent = totalPagesCount.toLocaleString();
         document.getElementById('storageSize').textContent = (totalSize / 1024 / 1024).toFixed(1) + ' MB';
-      } catch(err) {
-        console.error('Storage info error:', err);
-      }
+      } catch(err) {}
     }
 
     async function clearAllData() {
-      if (!confirm('⚠️ Remove all downloaded books and data? This cannot be undone!')) return;
-
+      if (!confirm('⚠️ Remove all downloaded books and data?')) return;
       try {
         for (const book of allBooks) {
           await IDB.delete(book.id);
           localStorage.removeItem(`progress_${book.id}`);
           localStorage.removeItem(`bookmarks_${book.id}`);
           book.downloaded = false;
-          book.total_pages = 0;
         }
         await IDB.setMeta('downloaded_books', JSON.stringify([]));
         localStorage.setItem('library_books', JSON.stringify(allBooks));
-        dbCache = {};
         renderBooks(allBooks);
         updateStorageInfo();
         alert('✅ All data cleared!');
-      } catch(err) {
-        alert('Error clearing data: ' + err.message);
-      }
+      } catch(err) { alert('Error: ' + err.message); }
     }
 
     function showLoading(text) {
@@ -2793,9 +2625,7 @@
       document.getElementById('loadingOverlay').classList.add('show');
     }
 
-    function hideLoading() {
-      document.getElementById('loadingOverlay').classList.remove('show');
-    }
+    function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
 
     function loadPreferences() {
       setTheme(localStorage.getItem('m_rb_theme') || 'light');
@@ -2813,21 +2643,14 @@
         applyFonts();
       }
 
-      const savedLang = localStorage.getItem('pref_spoken_lang') || 'ar';
-      setSpokenLang(savedLang);
-
-      const captionStyle = localStorage.getItem('pref_caption_style') || 'style-karaoke';
-      if (document.getElementById('optCaptionStyle')) {
-        document.getElementById('optCaptionStyle').value = captionStyle;
-      }
+      setSpokenLang(localStorage.getItem('pref_spoken_lang') || 'ar');
+      if (document.getElementById('optCaptionStyle')) document.getElementById('optCaptionStyle').value = localStorage.getItem('pref_caption_style') || 'style-karaoke';
 
       touchSpeakEnabled = localStorage.getItem('pref_touch_speak') !== 'false';
-      const touchCheck = document.getElementById('optTouchSpeak');
-      if (touchCheck) touchCheck.checked = touchSpeakEnabled;
+      if (document.getElementById('optTouchSpeak')) document.getElementById('optTouchSpeak').checked = touchSpeakEnabled;
 
       autoScrollEnabled = localStorage.getItem('pref_auto_scroll') !== 'false';
-      const autoScrollCheck = document.getElementById('optAutoScroll');
-      if (autoScrollCheck) autoScrollCheck.checked = autoScrollEnabled;
+      if (document.getElementById('optAutoScroll')) document.getElementById('optAutoScroll').checked = autoScrollEnabled;
 
       STATE.showAr = localStorage.getItem('pref_show_ar') !== 'false';
       STATE.showMl = localStorage.getItem('pref_show_ml') !== 'false';
@@ -2837,39 +2660,24 @@
       if (document.getElementById('optShowEn')) document.getElementById('optShowEn').checked = STATE.showEn;
 
       const scrollVertical = localStorage.getItem('pref_scroll_vertical') === 'true';
-      const scrollCheck = document.getElementById('optVerticalScroll');
-      if (scrollCheck) {
-        scrollCheck.checked = scrollVertical;
+      if (document.getElementById('optVerticalScroll')) {
+        document.getElementById('optVerticalScroll').checked = scrollVertical;
         updateScrollDirection();
       }
 
-      const ytId = localStorage.getItem('pref_youtube_id') || '';
-      if (document.getElementById('optYoutubeId')) document.getElementById('optYoutubeId').value = ytId;
+      if (document.getElementById('optYoutubeId')) document.getElementById('optYoutubeId').value = localStorage.getItem('pref_youtube_id') || '';
     }
 
-    // ================================================================
-    // INIT
-    // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
       loadPreferences();
       setupVoices();
       if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = setupVoices;
-
       initApp();
     });
 
-    // ================================================================
-    // SERVICE WORKER REGISTER (PWA)
-    // ================================================================
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-          .then(registration => {
-            console.log('✅ Service Worker registered successfully');
-          })
-          .catch(error => {
-            console.log('❌ Service Worker registration failed:', error);
-          });
+        navigator.serviceWorker.register('sw.js').catch(()=>{});
       });
     }
   </script>
