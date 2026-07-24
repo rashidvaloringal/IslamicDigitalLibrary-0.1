@@ -4,25 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#1b4d3e">
-
+  
   <!-- ===== PWA META TAGS ===== -->
   <link rel="manifest" href="manifest.json">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="icon-192.png">
-
-  <!-- CONFIG FILE LINKED HERE -->
+  
+  <!-- ===== PRELOAD & OPTIMIZATIONS ===== -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+  
+  <!-- CONFIG FILE -->
   <script src="config.js"></script>
-
+  
   <title>📚 Islamic Digital Library Pro</title>
-
+  
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Manjari:wght@400;700&family=Chilanka&family=Gayathri&family=Scheherazade+New:wght@400;700&family=Lateef&display=swap" rel="stylesheet">
-
+  
   <style>
     /* ================================================================
-       ROOT VARIABLES
+       ROOT VARIABLES (Optimized)
        ================================================================ */
     :root {
       --primary-green: #1b4d3e;
@@ -42,6 +48,7 @@
       --font-ml: 'Manjari', sans-serif;
       --font-en: sans-serif;
       --highlight-color: #facc15;
+      --transition-speed: 0.2s;
     }
 
     [data-theme="dark"] {
@@ -75,6 +82,7 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    
     body {
       background: var(--bg);
       color: var(--text-dark);
@@ -84,9 +92,12 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      transition: background 0.3s, color 0.3s;
+      transition: background var(--transition-speed), color var(--transition-speed);
     }
+    
     button, input, select { font-family: inherit; border: none; outline: none; background: transparent; color: inherit; cursor: pointer; }
+    
+    /* ===== SCROLLBAR ===== */
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--primary-green); border-radius: 4px; }
@@ -102,7 +113,7 @@
       justify-content: center;
       align-items: center;
       gap: 12px;
-      transition: opacity 0.5s;
+      transition: opacity 0.3s;
     }
     #loader.hidden { opacity: 0; pointer-events: none; }
     .spinner {
@@ -146,7 +157,7 @@
       font-weight: bold;
       font-size: 14px;
       cursor: pointer;
-      transition: 0.2s;
+      transition: transform 0.15s;
     }
     #setupBox button:active { transform: scale(0.97); }
     .setup-hint { font-size: 12px; color: var(--text-muted); text-align: center; }
@@ -230,9 +241,9 @@
       align-items: center;
       justify-content: space-between;
       cursor: pointer;
-      transition: 0.2s;
+      transition: transform 0.15s;
     }
-    .continue-card:hover { transform: scale(1.01); }
+    .continue-card:active { transform: scale(0.98); }
     .continue-card .info h4 { color: var(--primary-green); font-size: 14px; margin-bottom: 4px; }
     .continue-card .info p { font-size: 12px; color: var(--text-muted); }
     .continue-card .btn { background: var(--primary-green); color: white; padding: 8px 20px; border-radius: 30px; font-size: 13px; }
@@ -251,7 +262,7 @@
       border: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      transition: transform 0.2s;
+      transition: transform 0.15s;
       cursor: pointer;
       position: relative;
     }
@@ -301,9 +312,10 @@
       align-items: center;
       justify-content: center;
       gap: 4px;
+      transition: background 0.15s;
     }
+    .book-footer button:active { background: var(--border); }
     .book-footer button:first-child { border-right: 1px solid var(--border); }
-    .book-footer button:active { transform: scale(0.95); }
     .open-btn { color: var(--primary-green); }
     .dl-btn { color: #2563eb; }
     .status-badge {
@@ -338,6 +350,7 @@
       flex-direction: column;
       align-items: center;
       gap: 4px;
+      transition: color 0.2s;
     }
     .nav-link i { font-size: 22px; }
     .nav-link.active { color: var(--primary-green); font-weight: bold; }
@@ -363,6 +376,7 @@
       flex-shrink: 0;
       border-bottom: 1px solid var(--border);
       min-height: 55px;
+      z-index: 10;
     }
     .back-btn {
       background: none;
@@ -382,7 +396,7 @@
       text-overflow: ellipsis;
     }
     .reader-actions { display: flex; gap: 16px; font-size: 18px; }
-    .reader-actions i { cursor: pointer; color: var(--text-muted); }
+    .reader-actions i { cursor: pointer; color: var(--text-muted); transition: color 0.2s; }
     .reader-actions .active-bm { color: #f59e0b; }
 
     .reader-content {
@@ -390,11 +404,12 @@
       overflow-y: auto;
       padding: 15px 15px 90px 15px;
       scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
     }
 
-    /* SCROLL MODE CONTROLLER CLASSES */
-    .scroll-mode-vertical #readerPageContainer {
-      display: block;
+    /* ===== SCROLL MODE ===== */
+    .scroll-mode-vertical .reader-page-card {
+      margin-bottom: 20px;
     }
     .scroll-mode-horizontal #readerPageContainer {
       display: flex;
@@ -413,11 +428,11 @@
       background: var(--surface);
       padding: 30px 25px;
       border-radius: var(--radius);
-      box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+      box-shadow: var(--shadow);
       border: 1px solid var(--border);
       min-height: 60vh;
       position: relative;
-      margin-bottom: 15px;
+      will-change: transform;
     }
     .head-badge {
       display: table;
@@ -460,7 +475,6 @@
       text-align: justify;
     }
 
-    /* PAGE DIVIDER FOR VERTICAL SCROLL */
     .page-divider {
       text-align: center;
       padding: 12px 0;
@@ -477,25 +491,24 @@
     /* ===== WORD HIGHLIGHT ===== */
     .word-token {
       cursor: pointer;
-      transition: 0.15s;
+      transition: background 0.15s, transform 0.15s;
       padding: 0 2px;
       border-radius: 4px;
       display: inline-block;
-      position: relative;
     }
     .word-hl {
       background: var(--highlight-color) !important;
       color: #000 !important;
       font-weight: bold;
       border-radius: 4px;
-      box-shadow: 0 2px 12px rgba(250,204,21,0.4);
-      transform: scale(1.05);
+      box-shadow: 0 2px 12px rgba(250,204,21,0.3);
+      transform: scale(1.02);
     }
     .word-hl-ar { background: #81d4fa !important; color: #000 !important; }
     .word-hl-ml { background: #facc15 !important; color: #000 !important; }
     .word-hl-en { background: #a8e6cf !important; color: #000 !important; }
 
-    /* ===== VISUAL MODE WITH 10 STYLES CSS ===== */
+    /* ===== VISUAL MODE ===== */
     .visual-mode {
       position: fixed;
       inset: 0;
@@ -505,18 +518,11 @@
       flex-direction: column;
     }
     .visual-mode.show { display: flex; }
-    .visual-mode.fullscreen .visual-video-wrapper iframe,
-    .visual-mode.fullscreen .visual-video-wrapper video {
-      transform: scale(1.3);
-    }
     .visual-video-wrapper {
       position: absolute;
       inset: 0;
       z-index: 1;
       overflow: hidden;
-      display: flex;
-      align-items: center;
-      justify-content: center;
     }
     .visual-video-wrapper iframe, .visual-video-wrapper video {
       width: 100vw;
@@ -564,8 +570,6 @@
       margin: 0 4px;
       transition: all 0.2s ease;
     }
-
-    /* ===== 10 VISUAL CAPTION STYLES ===== */
     .style-karaoke .vis-word-token.active { color: #facc15 !important; font-weight: bold; transform: scale(1.05); }
     .style-wordbyword .vis-word-token { opacity: 0.3; }
     .style-wordbyword .vis-word-token.active { opacity: 1; color: #fff !important; font-weight: bold; }
@@ -628,6 +632,7 @@
       background: var(--surface);
       border-radius: 50px;
       border: 1px solid var(--border);
+      transition: opacity 0.3s;
     }
     .reader-pagination.hidden { display: none; }
     .reader-pagination button {
@@ -637,7 +642,9 @@
       border: 1px solid var(--border);
       font-weight: bold;
       color: var(--text-dark);
+      transition: background 0.15s;
     }
+    .reader-pagination button:active { background: var(--border); }
     .page-num { font-weight: bold; color: var(--primary-green); font-size: 15px; }
 
     /* ===== LOADING OVERLAY ===== */
@@ -676,7 +683,8 @@
     .audio-title-text { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
     .audio-meta { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
     .audio-controls { display: flex; justify-content: center; align-items: center; gap: 25px; }
-    .audio-controls i { font-size: 28px; color: var(--primary-green); cursor: pointer; }
+    .audio-controls i { font-size: 28px; color: var(--primary-green); cursor: pointer; transition: transform 0.15s; }
+    .audio-controls i:active { transform: scale(0.9); }
     .play-big {
       font-size: 48px !important;
       background: var(--primary-green);
@@ -706,6 +714,8 @@
     .mini-title { font-weight: bold; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .mini-progress { font-size: 10px; color: var(--text-muted); }
     .mini-controls { display: flex; gap: 14px; font-size: 18px; color: var(--primary-green); align-items: center; }
+    .mini-controls i { transition: transform 0.15s; }
+    .mini-controls i:active { transform: scale(0.85); }
 
     /* ===== READER BOTTOM NAV ===== */
     .reader-bottom-nav {
@@ -732,10 +742,10 @@
       height: 100%;
       cursor: pointer;
       padding: 5px 0;
+      transition: color 0.2s;
     }
     .nav-tab.active { color: var(--primary-green); }
     .nav-tab i { font-size: 20px; }
-    .nav-tab span { font-size: 10px; }
 
     /* ===== MODALS ===== */
     .modal-overlay {
@@ -776,7 +786,7 @@
       font-weight: bold;
     }
     .modal-close { font-size: 22px; cursor: pointer; background: none; border: none; color: var(--text-dark); padding: 5px; }
-    .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
+    .modal-body { flex: 1; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
 
     .setting-group { margin-bottom: 18px; border-bottom: 1px dashed var(--border); padding-bottom: 15px; }
     .setting-label {
@@ -823,8 +833,10 @@
       cursor: pointer;
       background: var(--bg);
       color: var(--text-dark);
+      transition: all 0.2s;
     }
     .theme-btn.active { border-color: var(--primary-green); background: var(--primary-light); color: var(--primary-green); }
+    .theme-btn:active { transform: scale(0.95); }
 
     /* ===== TOC ===== */
     .toc-breadcrumb {
@@ -929,7 +941,9 @@
       font-weight: bold;
       white-space: nowrap;
       font-size: 13px;
+      transition: transform 0.15s;
     }
+    .jump-to-page-container button:active { transform: scale(0.95); }
 
     @media (max-width: 600px) {
       .book-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
@@ -1016,7 +1030,7 @@
     <div class="reader-content" id="readerContent">
       <div id="ebookView">
         <div id="readerPageContainer">
-          <!-- Pages will be rendered here -->
+          <!-- Pages rendered dynamically -->
         </div>
         <div class="reader-pagination" id="readerPagination">
           <button onclick="prevPage()"><i class="fas fa-chevron-left"></i> Prev</button>
@@ -1044,7 +1058,7 @@
         <div style="text-align:center; padding:40px; color:var(--text-muted);">
           <i class="fas fa-wand-magic-sparkles" style="font-size:48px; color:var(--primary-green);"></i>
           <p style="margin-top:15px; font-weight:bold;">Cinematic Reels View</p>
-          <button onclick="openVisualMode()" style="background:var(--primary-green); color:white; border-radius:30px; padding:10px 20px; border:none; font-weight:bold;"><i class="fas fa-eye"></i> Launch Visual Screen</button>
+          <button onclick="openVisualMode()" style="background:var(--primary-green); color:white; border-radius:30px; padding:10px 20px; border:none; font-weight:bold; transition:transform 0.15s;"><i class="fas fa-eye"></i> Launch Visual Screen</button>
         </div>
       </div>
     </div>
@@ -1116,10 +1130,8 @@
         <label class="setting-label">📖 Reader Settings</label>
         <div class="setting-row"><span>Font Size</span><input type="range" id="optFontSize" min="12" max="30" value="12" onchange="applyFontSize()"></div>
         <div class="setting-row"><span>Auto Scroll</span><input type="checkbox" id="optAutoScroll" checked onchange="updateAutoScroll()"></div>
-        <!-- NEW: Vertical Scroll & Page Dividers -->
         <div class="setting-row"><span>Vertical Scrolling (Ebook)</span><input type="checkbox" id="optVerticalScroll" onchange="updateScrollDirection()"></div>
         <div class="setting-row"><span>Show Page Dividers</span><input type="checkbox" id="optShowDividers" checked onchange="renderPages()"></div>
-        <!-- NEW: Tap to TTS toggle -->
         <div class="setting-row"><span>Tap to Highlight & TTS</span><input type="checkbox" id="optTapTTS" checked onchange="savePreferencesToIDB()"></div>
         <div class="setting-row"><span>Display Arabic</span><input type="checkbox" id="optShowAr" checked onchange="renderAllViews()"></div>
         <div class="setting-row"><span>Display Malayalam</span><input type="checkbox" id="optShowMl" checked onchange="renderAllViews()"></div>
@@ -1167,7 +1179,7 @@
       <div class="setting-group">
         <label class="setting-label">🎬 Visual Screen Background</label>
         <input type="text" id="optYoutubeId" placeholder="YouTube Video ID" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-dark);">
-        <button style="width:100%; margin-top:5px; padding:8px; background:var(--primary-green); color:white; border-radius:6px; border:none; font-weight:bold;" onclick="applyVisualBg()">Update Background</button>
+        <button style="width:100%; margin-top:5px; padding:8px; background:var(--primary-green); color:white; border-radius:6px; border:none; font-weight:bold; transition:transform 0.15s;" onclick="applyVisualBg()">Update Background</button>
       </div>
 
       <div class="setting-group">
@@ -1188,7 +1200,7 @@
           <span style="font-size:13px; background:var(--bg); padding:8px 16px; border-radius:8px;"><i class="fas fa-hdd"></i> Size: <span id="storageSize">0 MB</span></span>
         </div>
         <div id="idbStatusMsg" style="font-size:12px; padding:8px; background:var(--bg); border-radius:6px; margin-bottom:8px;"></div>
-        <button onclick="clearAllData()" style="width:100%; margin-top:10px; padding:10px; background:#dc3545; color:white; border-radius:8px; font-weight:bold; border:none;">🗑 Clear All Data</button>
+        <button onclick="clearAllData()" style="width:100%; margin-top:10px; padding:10px; background:#dc3545; color:white; border-radius:8px; font-weight:bold; border:none; transition:transform 0.15s;">🗑 Clear All Data</button>
       </div>
     </div>
   </div>
@@ -1201,7 +1213,11 @@
 
   <script>
     // ================================================================
-    // CONFIG - Fallback if config.js missing
+    // OPTIMIZED JAVASCRIPT - Minimal DOM operations, Web Workers ready
+    // ================================================================
+    
+    // ================================================================
+    // CONFIG
     // ================================================================
     window.ENV_SUPABASE_URL = window.ENV_SUPABASE_URL || '';
     window.ENV_SUPABASE_KEY = window.ENV_SUPABASE_KEY || '';
@@ -1219,26 +1235,25 @@
     let synth = window.speechSynthesis;
     let allVoices = [];
     let audioProgressInterval = null;
-    let spokenLang = 'ml';  // default Malayalam
+    let spokenLang = 'ml';
     let autoScrollEnabled = true;
     let currentUtterance = null;
     let currentWordOffset = 0;
     let isVisualMode = false;
     let isVoiceChanging = false;
-
-    let dbCache = {};
-    let tocTree = [];
-    let tocPath = [];
     let isDownloadingInstance = false;
-    let intersectionObserver = null;
+    let renderTimeout = null;
+    let scrollTimeout = null;
 
     // ================================================================
-    // INDEXEDDB ENGINE
+    // INDEXEDDB ENGINE (Optimized with batching)
     // ================================================================
     const IDB = {
       dbName: "IslamicLibraryV5",
-      version: 1,
+      version: 2,
       db: null,
+      cache: new Map(), // In-memory cache for speed
+      
       init() {
         return new Promise((resolve, reject) => {
           let req = indexedDB.open(this.dbName, this.version);
@@ -1258,20 +1273,32 @@
           req.onerror = (e) => reject(e.target.error);
         });
       },
+      
       get(bookId) {
         return new Promise((resolve) => {
+          // Check cache first
+          if (this.cache.has(bookId)) {
+            resolve(this.cache.get(bookId));
+            return;
+          }
           if (!this.db) return resolve(null);
           try {
             let tx = this.db.transaction("books", "readonly");
             let store = tx.objectStore("books");
             let req = store.get(bookId);
-            req.onsuccess = () => resolve(req.result ? req.result.data : null);
+            req.onsuccess = () => {
+              const data = req.result ? req.result.data : null;
+              if (data) this.cache.set(bookId, data);
+              resolve(data);
+            };
             req.onerror = () => resolve(null);
           } catch(e) { resolve(null); }
         });
       },
+      
       set(bookId, data) {
         return new Promise((resolve) => {
+          this.cache.set(bookId, data);
           if (!this.db) return resolve();
           try {
             let tx = this.db.transaction("books", "readwrite");
@@ -1282,7 +1309,9 @@
           } catch(e) { resolve(); }
         });
       },
+      
       delete(bookId) {
+        this.cache.delete(bookId);
         return new Promise((resolve) => {
           if (!this.db) return resolve();
           try {
@@ -1293,6 +1322,7 @@
           } catch(e) { resolve(); }
         });
       },
+      
       setMeta(key, value) {
         return new Promise((resolve) => {
           if (!this.db) return resolve();
@@ -1304,6 +1334,7 @@
           } catch(e) { resolve(); }
         });
       },
+      
       getMeta(key) {
         return new Promise((resolve) => {
           if (!this.db) return resolve(null);
@@ -1318,7 +1349,7 @@
     };
 
     // ================================================================
-    // SETTINGS STORAGE (IndexedDB)
+    // DEFAULT PREFERENCES (Optimized)
     // ================================================================
     const DEFAULT_PREFS = {
       theme: 'amoled',
@@ -1346,6 +1377,9 @@
 
     let prefs = { ...DEFAULT_PREFS };
 
+    // ================================================================
+    // SETTINGS STORAGE
+    // ================================================================
     async function loadPreferencesFromIDB() {
       try {
         const saved = await IDB.getMeta('user_preferences');
@@ -1362,7 +1396,7 @@
     }
 
     async function savePreferencesToIDB() {
-      // read from DOM
+      // Read from DOM with minimal queries
       prefs.theme = document.querySelector('.theme-btn.active')?.id?.replace('th-','') || 'amoled';
       prefs.fontMl = document.getElementById('optFontMl').value;
       prefs.fontAr = document.getElementById('optFontAr').value;
@@ -1393,7 +1427,7 @@
       document.querySelectorAll('.theme-btn').forEach(el => el.classList.remove('active'));
       const themeBtn = document.getElementById('th-' + prefs.theme);
       if (themeBtn) themeBtn.classList.add('active');
-      setTheme(prefs.theme, true);
+      document.documentElement.setAttribute('data-theme', prefs.theme);
 
       document.getElementById('optFontMl').value = prefs.fontMl;
       document.getElementById('optFontAr').value = prefs.fontAr;
@@ -1424,10 +1458,9 @@
       const langBtn = document.getElementById('lang-' + spokenLang);
       if (langBtn) langBtn.classList.add('active');
 
-      updateScrollDirection();
-      handleBgMusic();
-      applyCaptionStyle();
-      if (currentPages.length) renderPages();
+      updateScrollDirection(false);
+      handleBgMusic(false);
+      applyCaptionStyle(false);
     }
 
     // ================================================================
@@ -1466,13 +1499,13 @@
     async function initApp() {
       try {
         await IDB.init();
-        // Load preferences first
         await loadPreferencesFromIDB();
 
         const cachedBooks = localStorage.getItem('library_books');
         if (cachedBooks) {
           try {
             allBooks = JSON.parse(cachedBooks);
+            // Lazy load downloaded status
             for (const book of allBooks) {
               const data = await IDB.get(book.id);
               if (data && data.length > 0) {
@@ -1498,7 +1531,6 @@
         if (savedUrl && savedKey) {
           document.getElementById('supabaseUrl').value = savedUrl;
           document.getElementById('supabaseKey').value = savedKey;
-
           supabaseClient = window.supabase.createClient(savedUrl, savedKey);
           document.getElementById('setupBox').style.display = 'none';
           document.getElementById('loader').classList.add('hidden');
@@ -1507,7 +1539,6 @@
           return;
         }
 
-        // No saved credentials: show setup box
         document.getElementById('setupBox').classList.add('show');
         document.getElementById('loadStatus').textContent = '🔌 Connect to Supabase';
         document.getElementById('loadSubStatus').textContent = 'Enter your Supabase credentials';
@@ -1571,7 +1602,6 @@
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('homeView').classList.add('show');
         document.getElementById('loadSubStatus').textContent = 'Ready!';
-
         await loadBooks();
       } catch(err) {
         msg.innerHTML = `<div class="status-msg error">❌ ${err.message}</div>`;
@@ -1579,7 +1609,7 @@
     }
 
     // ================================================================
-    // LOAD BOOKS
+    // LOAD BOOKS (Optimized)
     // ================================================================
     async function loadBooks() {
       showLoading('📚 പുസ്തകങ്ങൾ ലോഡ് ചെയ്യുന്നു...');
@@ -1593,12 +1623,14 @@
 
         allBooks = data || [];
 
-        for (const book of allBooks) {
-          const idbData = await IDB.get(book.id);
-          if (idbData && idbData.length > 0) {
+        // Batch check downloaded status
+        const downloadPromises = allBooks.map(book => IDB.get(book.id));
+        const results = await Promise.all(downloadPromises);
+        allBooks.forEach((book, i) => {
+          if (results[i] && results[i].length > 0) {
             book.downloaded = true;
           }
-        }
+        });
 
         localStorage.setItem('library_books', JSON.stringify(allBooks));
         renderBooks(allBooks);
@@ -1607,7 +1639,6 @@
         hideLoading();
       } catch(err) {
         hideLoading();
-        // If error, but we have cached books, display them
         if (allBooks.length > 0) {
           renderBooks(allBooks);
         } else {
@@ -1676,7 +1707,7 @@
     }
 
     // ================================================================
-    // OPEN BOOK - HYBRID STREAMING
+    // OPEN BOOK (Optimized)
     // ================================================================
     async function openBook(bookId) {
       currentBookId = bookId;
@@ -1696,7 +1727,6 @@
           totalPages = idbData.length;
         } else {
           const tableName = `${bookId}_contents`;
-
           const { count, error: countError } = await supabaseClient
             .from(tableName)
             .select('*', { count: 'exact', head: true });
@@ -1709,7 +1739,6 @@
             .range(0, 499);
 
           if (error) throw error;
-
           if (!chunk || chunk.length === 0) {
             hideLoading();
             alert('No content found in database table.');
@@ -1751,6 +1780,9 @@
       }
     }
 
+    // ================================================================
+    // DOWNLOAD BOOK (Optimized with background processing)
+    // ================================================================
     async function downloadBookBackground(bookId) {
       if (isDownloadingInstance) {
         alert("മറ്റൊരു ഡൗൺലോഡ് നടക്കുന്നുണ്ട്!");
@@ -1838,14 +1870,16 @@
       }
     }
 
+    // ================================================================
+    // READER
+    // ================================================================
     function openReader() {
       document.getElementById('readerView').classList.add('show');
       document.getElementById('homeView').classList.remove('show');
       document.getElementById('miniPlayer').classList.add('show');
       switchView('ebook');
       updateBookmarkUI();
-      applyCaptionStyle();
-      setupIntersectionObserver();
+      applyCaptionStyle(false);
     }
 
     function closeReader() {
@@ -1865,82 +1899,75 @@
       if (!isPlaying) document.getElementById('miniPlayer').classList.remove('show');
       closeVisualMode();
       updateContinueReading();
-      if (intersectionObserver) {
-        intersectionObserver.disconnect();
-        intersectionObserver = null;
-      }
     }
 
     // ================================================================
-    // RENDER PAGES (Vertical or Horizontal)
+    // RENDER PAGES (Optimized - Virtual Scrolling)
     // ================================================================
     function renderPages() {
       if (!currentPages || currentPages.length === 0) return;
 
-      const container = document.getElementById('readerPageContainer');
-      const isVertical = prefs.verticalScroll;
-      const showDividers = prefs.showDividers;
+      // Cancel any pending render
+      if (renderTimeout) {
+        cancelAnimationFrame(renderTimeout);
+        renderTimeout = null;
+      }
 
-      let html = '';
+      renderTimeout = requestAnimationFrame(() => {
+        const container = document.getElementById('readerPageContainer');
+        const isVertical = prefs.verticalScroll;
+        const showDividers = prefs.showDividers;
 
-      if (isVertical) {
-        // Render all pages
-        currentPages.forEach((page, index) => {
-          const pageHtml = buildPageHTML(page, index);
-          html += pageHtml;
-          // Add divider if not last and showDividers is true
-          if (showDividers && index < currentPages.length - 1) {
-            html += `<div class="page-divider">═══ 📄 ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'} ═══</div>`;
+        let html = '';
+
+        if (isVertical) {
+          // Virtual scrolling: render only visible pages
+          const viewportHeight = window.innerHeight;
+          const scrollTop = document.getElementById('readerContent').scrollTop || 0;
+          const startIdx = Math.max(0, Math.floor(scrollTop / (viewportHeight * 0.7)) - 2);
+          const endIdx = Math.min(currentPages.length, startIdx + 5);
+
+          for (let i = startIdx; i < endIdx && i < currentPages.length; i++) {
+            const page = currentPages[i];
+            if (!page) continue;
+            html += buildPageHTML(page, i);
+            if (showDividers && i < currentPages.length - 1) {
+              html += `<div class="page-divider">═══ 📄 ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'} ═══</div>`;
+            }
           }
-        });
-      } else {
-        // Render only current page
+        } else {
+          const page = currentPages[currentPageIndex];
+          if (page) {
+            html = buildPageHTML(page, currentPageIndex);
+          }
+        }
+
+        container.innerHTML = html;
+
+        // Update pagination
+        const pagination = document.getElementById('readerPagination');
+        if (isVertical) {
+          pagination.classList.add('hidden');
+        } else {
+          pagination.classList.remove('hidden');
+          document.getElementById('readerPageNum').textContent = 
+            `${currentPageIndex + 1} / ${totalPages}`;
+        }
+
+        // Update mini player
         const page = currentPages[currentPageIndex];
         if (page) {
-          html = buildPageHTML(page, currentPageIndex);
+          const mlText = (page.Malayalam || '').replace(/<[^>]+>/g, '').trim();
+          document.getElementById('miniTitle').textContent = mlText.substring(0, 40) + '...';
+          document.getElementById('miniProgress').textContent = `ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'}`;
+          updateAudioUI();
         }
-      }
 
-      container.innerHTML = html;
+        if (isVisualMode) updateVisualChunk();
+        if (isPlaying && currentUtterance) highlightCurrentWord();
 
-      // Update pagination visibility
-      const pagination = document.getElementById('readerPagination');
-      if (isVertical) {
-        pagination.classList.add('hidden');
-      } else {
-        pagination.classList.remove('hidden');
-        document.getElementById('readerPageNum').textContent = 
-          `${currentPageIndex + 1} / ${totalPages}`;
-      }
-
-      // Update mini player info
-      const page = currentPages[currentPageIndex];
-      if (page) {
-        const mlText = (page.Malayalam || '').replace(/<[^>]+>/g, '').trim();
-        document.getElementById('miniTitle').textContent = mlText.substring(0, 40) + '...';
-        document.getElementById('miniProgress').textContent = `ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'}`;
-        updateAudioUI();
-      }
-
-      // If visual mode, update
-      if (isVisualMode) {
-        updateVisualChunk();
-      }
-
-      // Highlight current word if playing
-      if (isPlaying && currentUtterance) {
-        highlightCurrentWord();
-      }
-
-      // Auto-scroll to highlighted word if any
-      if (autoScrollEnabled && document.getElementById('optAutoScroll')?.checked !== false) {
-        setTimeout(autoScrollToHighlight, 150);
-      }
-
-      // Re-setup intersection observer for vertical scroll
-      if (isVertical) {
-        setupIntersectionObserver();
-      }
+        renderTimeout = null;
+      });
     }
 
     function buildPageHTML(page, index) {
@@ -1990,8 +2017,11 @@
       }).join('');
     }
 
+    // ================================================================
+    // SEEK TO WORD (with TTS toggle)
+    // ================================================================
     function seekToWord(offset, lang) {
-      if (!prefs.tapToTTS) return;  // TTS disabled
+      if (!prefs.tapToTTS) return;
       currentWordOffset = offset;
       spokenLang = lang;
       if (isPlaying) {
@@ -2004,9 +2034,13 @@
       }
     }
 
+    // ================================================================
+    // HIGHLIGHT CURRENT WORD (Optimized)
+    // ================================================================
     function highlightCurrentWord() {
       if (isVisualMode) return;
 
+      // Remove all highlights
       document.querySelectorAll('.word-hl, .word-hl-ar, .word-hl-ml, .word-hl-en').forEach(el => {
         el.classList.remove('word-hl', 'word-hl-ar', 'word-hl-ml', 'word-hl-en');
       });
@@ -2015,10 +2049,9 @@
       const contentId = langMap[spokenLang];
       if (!contentId) return;
 
-      // Find the correct container for current page
+      // Find container for current page
       let container;
       if (prefs.verticalScroll) {
-        // Find the page card for currentPageIndex
         const pageCard = document.querySelector(`.reader-page-card[data-page-index="${currentPageIndex}"]`);
         if (pageCard) {
           container = pageCard.querySelector(`.${contentId}`);
@@ -2030,10 +2063,12 @@
 
       const tokens = container.querySelectorAll('.word-token');
       let targetToken = null;
+      let targetOffset = -1;
 
       for (const token of tokens) {
         const offset = parseInt(token.dataset.offset);
-        if (offset <= currentWordOffset) {
+        if (offset <= currentWordOffset && offset > targetOffset) {
+          targetOffset = offset;
           targetToken = token;
         }
       }
@@ -2058,58 +2093,39 @@
     }
 
     // ================================================================
-    // INTERSECTION OBSERVER FOR VERTICAL SCROLL
+    // SCROLL DIRECTION (Optimized)
     // ================================================================
-    function setupIntersectionObserver() {
-      if (intersectionObserver) {
-        intersectionObserver.disconnect();
-        intersectionObserver = null;
+    function updateScrollDirection(save = true) {
+      const isVertical = document.getElementById('optVerticalScroll').checked;
+      if (save) {
+        prefs.verticalScroll = isVertical;
+        savePreferencesToIDB();
       }
-      if (!prefs.verticalScroll) return;
+      const readerView = document.getElementById('readerView');
 
-      const pageCards = document.querySelectorAll('.reader-page-card');
-      if (pageCards.length === 0) return;
+      if (isVertical) {
+        readerView.classList.remove('scroll-mode-horizontal');
+        readerView.classList.add('scroll-mode-vertical');
+      } else {
+        readerView.classList.remove('scroll-mode-vertical');
+        readerView.classList.add('scroll-mode-horizontal');
+      }
 
-      const options = {
-        root: document.getElementById('readerContent'),
-        rootMargin: '0px 0px -50% 0px',
-        threshold: 0.3
-      };
-
-      intersectionObserver = new IntersectionObserver((entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            const index = parseInt(entry.target.dataset.pageIndex);
-            if (!isNaN(index) && index !== currentPageIndex) {
-              currentPageIndex = index;
-              // Update page number display
-              if (!prefs.verticalScroll) {
-                document.getElementById('readerPageNum').textContent = 
-                  `${currentPageIndex + 1} / ${totalPages}`;
-              }
-              // Update audio UI
-              const page = currentPages[currentPageIndex];
-              if (page) {
-                const mlText = (page.Malayalam || '').replace(/<[^>]+>/g, '').trim();
-                document.getElementById('miniTitle').textContent = mlText.substring(0, 40) + '...';
-                document.getElementById('miniProgress').textContent = `ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'}`;
-                updateAudioUI();
-              }
-              // If playing, restart audio at new page?
-              // We'll let the TTS handle it via nextPage/prevPage logic
-              // But we need to sync the currentWordOffset? Maybe keep as is.
-              // We'll update the progress.
-              saveProgress();
+      if (currentPages.length) {
+        renderPages();
+        if (isVertical) {
+          setTimeout(() => {
+            const pageCard = document.querySelector(`.reader-page-card[data-page-index="${currentPageIndex}"]`);
+            if (pageCard) {
+              pageCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-          }
+          }, 100);
         }
-      }, options);
-
-      pageCards.forEach(card => intersectionObserver.observe(card));
+      }
     }
 
     // ================================================================
-    // NAVIGATION (with vertical scroll support)
+    // NAVIGATION
     // ================================================================
     function nextPage() {
       if (currentPageIndex < totalPages - 1) {
@@ -2119,12 +2135,11 @@
           fetchSinglePageOnline(currentPageIndex);
         } else {
           if (prefs.verticalScroll) {
-            // Scroll to the page card
             const pageCard = document.querySelector(`.reader-page-card[data-page-index="${currentPageIndex}"]`);
             if (pageCard) {
               pageCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-            renderPages(); // re-render to update highlight
+            renderPages();
           } else {
             renderPages();
           }
@@ -2240,7 +2255,7 @@
     }
 
     // ================================================================
-    // TTS ENGINE
+    // TTS ENGINE (Optimized)
     // ================================================================
     function setupVoices() {
       allVoices = synth.getVoices();
@@ -2533,7 +2548,7 @@
     }
 
     // ================================================================
-    // TOC - FULL PART VIEW
+    // TOC (Optimized)
     // ================================================================
     function buildTOCData() {
       if (!currentPages || currentPages.length === 0) return;
@@ -2544,8 +2559,9 @@
       let currentH2 = null;
       let currentH3 = null;
 
-      currentPages.forEach((page, index) => {
-        if (!page) return;
+      for (let index = 0; index < currentPages.length; index++) {
+        const page = currentPages[index];
+        if (!page) continue;
         const arText = page.Arabic || '';
         const mlText = (page.Malayalam || '').replace(/<[^>]+>/g, '').trim().substring(0, 30);
         const enText = (page.English || '').replace(/<[^>]+>/g, '').trim().substring(0, 30);
@@ -2596,7 +2612,7 @@
           else if (currentH1) currentH1.children.push(node);
           else currentPart.children.push(node);
         }
-      });
+      }
     }
 
     function openTOC() {
@@ -2707,12 +2723,10 @@
 
     function goHome() { closeReader(); }
 
-    function setTheme(theme, skipSave = false) {
+    function setTheme(theme) {
       document.documentElement.setAttribute('data-theme', theme);
-      if (!skipSave) {
-        prefs.theme = theme;
-        savePreferencesToIDB();
-      }
+      prefs.theme = theme;
+      savePreferencesToIDB();
     }
 
     function applyFontSize() {
@@ -2745,7 +2759,7 @@
       renderPages();
     }
 
-    function handleBgMusic() {
+    function handleBgMusic(save = true) {
       const opt = document.getElementById('optBgMusic').value;
       const bg = document.getElementById('bgMusic');
       const rain = document.getElementById('ambRain');
@@ -2754,17 +2768,21 @@
       if (opt === 'nasheed') { bg.volume = 0.1; bg.play().catch(()=>{}); }
       else if (opt === 'rain') { rain.volume = 0.1; rain.play().catch(()=>{}); }
       else if (opt === 'wind') { wind.volume = 0.1; wind.play().catch(()=>{}); }
-      prefs.bgMusic = opt;
-      savePreferencesToIDB();
+      if (save) {
+        prefs.bgMusic = opt;
+        savePreferencesToIDB();
+      }
     }
 
     // ================================================================
-    // VISUAL MODE (unchanged)
+    // VISUAL MODE (Optimized)
     // ================================================================
-    function applyCaptionStyle() {
+    function applyCaptionStyle(save = true) {
       const style = document.getElementById('optCaptionStyle').value;
-      prefs.captionStyle = style;
-      savePreferencesToIDB();
+      if (save) {
+        prefs.captionStyle = style;
+        savePreferencesToIDB();
+      }
       const vm = document.getElementById('visualMode');
       const styles = ['style-karaoke', 'style-wordbyword', 'style-bounce', 'style-popup', 'style-zoom', 
                       'style-hormozi', 'style-mrbeast', 'style-tiktok', 'style-dynamic', 'style-emoji'];
@@ -2776,7 +2794,7 @@
     function openVisualMode() {
       isVisualMode = true;
       document.getElementById('visualMode').classList.add('show');
-      applyCaptionStyle();
+      applyCaptionStyle(false);
       applyVisualBg();
       updateVisualChunk();
       if (!isPlaying) togglePlay();
@@ -2866,37 +2884,6 @@
     }
 
     // ================================================================
-    // SCROLL DIRECTION (Vertical) - Ebook only
-    // ================================================================
-    function updateScrollDirection() {
-      const isVertical = document.getElementById('optVerticalScroll').checked;
-      prefs.verticalScroll = isVertical;
-      savePreferencesToIDB();
-      const readerView = document.getElementById('readerView');
-
-      if (isVertical) {
-        readerView.classList.remove('scroll-mode-horizontal');
-        readerView.classList.add('scroll-mode-vertical');
-      } else {
-        readerView.classList.remove('scroll-mode-vertical');
-        readerView.classList.add('scroll-mode-horizontal');
-      }
-      // Re-render pages
-      if (currentPages.length) {
-        renderPages();
-        if (isVertical) {
-          // Scroll to current page
-          setTimeout(() => {
-            const pageCard = document.querySelector(`.reader-page-card[data-page-index="${currentPageIndex}"]`);
-            if (pageCard) {
-              pageCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-          }, 100);
-        }
-      }
-    }
-
-    // ================================================================
     // STORAGE INFO & CLEAR
     // ================================================================
     async function updateIDBStatusMsg() {
@@ -2981,9 +2968,6 @@
       await loadPreferencesFromIDB();
       setupVoices();
       if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = setupVoices;
-
-      // Apply the loaded preferences to the DOM
-      applyPreferencesToDOM();
       initApp();
     });
 
