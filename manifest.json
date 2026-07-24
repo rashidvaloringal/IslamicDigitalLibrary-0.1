@@ -1,7 +1,7 @@
 {
   "name": "Islamic Digital Library Pro",
   "short_name": "Islamic Library",
-  "description": "ഇസ്ലാമിക ഡിജിറ്റൽ ലൈബ്രറി - പൂർണ്ണ സുപ്രഭാതം",
+  "description": "ഇസ്ലാമിക ഡിജിറ്റൽ ലൈബ്രറി",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#1b4d3e",
