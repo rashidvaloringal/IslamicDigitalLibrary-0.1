@@ -254,8 +254,6 @@
       transition: transform 0.2s;
       cursor: pointer;
       position: relative;
-      content-visibility: auto;
-      contain-intrinsic-size: 240px;
     }
     .book-card:active { transform: scale(0.97); }
     .book-avatar-fallback {
@@ -446,10 +444,10 @@
       min-height: 50vh;
       position: relative;
       margin-bottom: 15px;
-      content-visibility: auto;
+      content-visibility: auto; /* CORE OPTIMIZATION */
       contain-intrinsic-size: 400px;
-      contain: layout style paint;
     }
+    
     .head-badge {
       display: table;
       margin: 0 auto 20px auto;
@@ -1028,12 +1026,7 @@
     <div class="reader-content" id="readerContent">
       <div id="ebookView">
         <div id="readerPageContainer">
-          <div class="reader-page-card">
-            <div class="head-badge">Loading...</div>
-            <div class="ar-content" id="arContent">📖 Loading...</div>
-            <div class="ml-content" id="mlContent"></div>
-            <div class="en-content" id="enContent"></div>
-          </div>
+          <!-- JS INJECTS PAGES HERE -->
         </div>
         <div class="reader-pagination">
           <button onclick="prevPage()"><i class="fas fa-chevron-left"></i> Prev</button>
@@ -1241,6 +1234,10 @@
     let tocTree = [];
     let tocPath = [];
     let isDownloadingInstance = false;
+    
+    // Intersection Observer instances for infinite vertical scroll
+    let pageObserver = null;
+    let activePageObserver = null;
 
     const STATE = {
       showAr: true,
@@ -1357,13 +1354,13 @@
     }
 
     // ================================================================
-    // INITIALIZATION (LIGHTWEIGHT INITIAL LOAD)
+    // INITIALIZATION
     // ================================================================
     async function initApp() {
       try {
         await IDB.init();
 
-        // Attach Event Delegation to container for zero memory footprint
+        // Event Delegation setup for Zero-Lag Word Clicks
         setupEventDelegation();
 
         const downloadedBooks = await IDB.getMeta('downloaded_books');
@@ -1537,7 +1534,7 @@
     }
 
     // ================================================================
-    // OPEN BOOK (INDEXEDDB FIRST - ZERO LAG)
+    // OPEN BOOK & DOWNLOAD
     // ================================================================
     async function openBook(bookId) {
       currentBookId = bookId;
@@ -1550,7 +1547,6 @@
       showLoading('📖 Opening book contents...');
 
       try {
-        // ALWAYS READ FROM INDEXEDDB FIRST IF DOWNLOADED OR CACHED
         let idbData = await IDB.get(bookId);
 
         if (idbData && idbData.length > 0) {
@@ -1584,13 +1580,8 @@
           }
 
           currentPages = chunk.map(item => ({
-            id: item.ID,
-            sequence: item.ID,
-            part: item['Part Number'] || 1,
-            page: item['Page Number'] || 1,
-            Arabic: item['Arabic Text'] || '',
-            Malayalam: item['Malayalam Text'] || '',
-            English: item['English Text'] || ''
+            id: item.ID, sequence: item.ID, part: item['Part Number'] || 1, page: item['Page Number'] || 1,
+            Arabic: item['Arabic Text'] || '', Malayalam: item['Malayalam Text'] || '', English: item['English Text'] || ''
           }));
 
           totalPages = actualTotalPages > 0 ? actualTotalPages : currentPages.length;
@@ -1643,22 +1634,15 @@
 
         while (hasMore) {
           const { data: supabaseData, error } = await supabaseClient
-            .from(tableName)
-            .select('*')
-            .order('ID', { ascending: true })
+            .from(tableName).select('*').order('ID', { ascending: true })
             .range(page * BATCH_SIZE, (page + 1) * BATCH_SIZE - 1);
 
           if (error) throw error;
 
           if (supabaseData && supabaseData.length > 0) {
             const parsed = supabaseData.map(item => ({
-              id: item.ID,
-              sequence: item.ID,
-              part: item['Part Number'] || 1,
-              page: item['Page Number'] || 1,
-              Arabic: item['Arabic Text'] || '',
-              Malayalam: item['Malayalam Text'] || '',
-              English: item['English Text'] || ''
+              id: item.ID, sequence: item.ID, part: item['Part Number'] || 1, page: item['Page Number'] || 1,
+              Arabic: item['Arabic Text'] || '', Malayalam: item['Malayalam Text'] || '', English: item['English Text'] || ''
             }));
 
             allData = allData.concat(parsed);
@@ -1730,12 +1714,51 @@
     }
 
     // ================================================================
+    // INFINITE SCROLL / INTERSECTION OBSERVER SETUP
+    // ================================================================
+    function setupIntersectionObserver() {
+      if(pageObserver) pageObserver.disconnect();
+      if(activePageObserver) activePageObserver.disconnect();
+
+      // Trigger point: When a page is near viewport (200% margin), render its content
+      const options = { root: null, rootMargin: '200% 0px', threshold: 0.01 };
+      pageObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if(entry.isIntersecting) {
+            const pageCard = entry.target;
+            const pIdx = parseInt(pageCard.dataset.pageIndex);
+            if(pageCard.dataset.loaded === "false") {
+               renderSpecificPageContent(pIdx, pageCard);
+            }
+          }
+        });
+      }, options);
+
+      // Track exactly which page is currently in the middle of screen for TTS sync
+      activePageObserver = new IntersectionObserver((entries) => {
+         entries.forEach(entry => {
+           if(entry.isIntersecting && entry.intersectionRatio > 0.4) {
+              const newIdx = parseInt(entry.target.dataset.pageIndex);
+              if (currentPageIndex !== newIdx) {
+                  currentPageIndex = newIdx;
+                  updateAudioUI();
+              }
+           }
+         });
+      }, { root: null, rootMargin: '0px', threshold: 0.4 });
+
+      document.querySelectorAll('.reader-page-card').forEach(card => {
+         pageObserver.observe(card);
+         activePageObserver.observe(card);
+      });
+    }
+
+    // ================================================================
     // EVENT DELEGATION FOR FAST TOUCH (NO MEMORY LEAKS)
     // ================================================================
     function setupEventDelegation() {
       const container = document.getElementById('readerPageContainer');
       if (!container) return;
-
       container.addEventListener('click', (e) => {
         const token = e.target.closest('.word-token');
         if (token && touchSpeakEnabled) {
@@ -1748,7 +1771,7 @@
     }
 
     // ================================================================
-    // RENDER PAGE (ULTRA-FAST LAZY VIRTUALIZATION)
+    // RENDER PAGE (INFINITE SCROLL OR SINGLE PAGE)
     // ================================================================
     function renderCurrentPage() {
       if (!currentPages || currentPages.length === 0) return;
@@ -1757,54 +1780,48 @@
       const isVertical = document.getElementById('optVerticalScroll')?.checked;
 
       if (isVertical) {
-        // Render STRICT window (Current page +/- 2 pages) to prevent UI lag / phone heat
+        // CONTINUOUS INFINITE SCROLL: Render blank shells for ALL pages
         let fullHtml = '';
-        const startIdx = Math.max(0, currentPageIndex - 2);
-        const endIdx = Math.min(currentPages.length - 1, currentPageIndex + 3);
-
-        for (let idx = startIdx; idx <= endIdx; idx++) {
-          const page = currentPages[idx];
-          if (!page) continue;
-
-          const ar = page.Arabic || '';
-          const ml = page.Malayalam || '';
-          const en = page.English || '';
-          const part = page.part || '?';
-          const pageNum = page.page || (idx + 1);
-
-          let arHtml = STATE.showAr && ar ? tokenizeText(ar, 'ar', idx) : '';
-          let mlHtml = STATE.showMl && ml ? tokenizeText(ml, 'ml', idx) : '';
-          let enHtml = STATE.showEn && en ? tokenizeText(en, 'en', idx) : '';
-
-          if (idx > startIdx) {
+        for (let idx = 0; idx < totalPages; idx++) {
+          const page = currentPages[idx] || { part: '?', page: idx+1 };
+          
+          if (idx > 0) {
             fullHtml += `
               <div class="page-break-divider">
-                <span class="page-break-label">--- Page ${pageNum} Break ---</span>
+                <span class="page-break-label">--- Page ${page.page || idx+1} Break ---</span>
               </div>
             `;
           }
 
           fullHtml += `
-            <div class="reader-page-card" id="page-card-${idx}">
-              <div class="head-badge">ഭാഗം ${part} - പേജ് ${pageNum} (${idx + 1}/${totalPages})</div>
-          `;
-          if (arHtml) fullHtml += `<div class="ar-content" id="arContent-${idx}">${arHtml}</div>`;
-          if (mlHtml) fullHtml += `<div class="ml-content" id="mlContent-${idx}">${mlHtml}</div>`;
-          if (enHtml) fullHtml += `<div class="en-content" id="enContent-${idx}">${enHtml}</div>`;
-          fullHtml += `</div>`;
+            <div class="reader-page-card" id="page-card-${idx}" data-page-index="${idx}" data-loaded="false">
+              <div class="head-badge">ഭാഗം ${page.part || '?'} - പേജ് ${page.page || idx+1} (${idx + 1}/${totalPages})</div>
+              <div class="page-content-wrapper" style="min-height:300px; display:flex; justify-content:center; align-items:center;">
+                  <div class="loader-spinner" style="width:30px; height:30px; border-width:3px;"></div>
+              </div>
+            </div>`;
         }
-
+        
         container.innerHTML = fullHtml;
+        setupIntersectionObserver();
+
+        // Scroll gracefully to current saved page
+        setTimeout(() => {
+            const target = document.getElementById(`page-card-${currentPageIndex}`);
+            if(target) target.scrollIntoView({behavior: 'auto', block: 'start'});
+        }, 100);
+
       } else {
-        // Single-Page Horizontal view
+        // HORIZONTAL SINGLE-PAGE VIEW (Standard)
+        if(pageObserver) pageObserver.disconnect();
+        if(activePageObserver) activePageObserver.disconnect();
+
         const page = currentPages[currentPageIndex];
         if (!page) return;
 
         const ar = page.Arabic || '';
         const ml = page.Malayalam || '';
         const en = page.English || '';
-        const part = page.part || '?';
-        const pageNum = page.page || '?';
 
         let arHtml = STATE.showAr && ar ? tokenizeText(ar, 'ar', currentPageIndex) : '';
         let mlHtml = STATE.showMl && ml ? tokenizeText(ml, 'ml', currentPageIndex) : '';
@@ -1812,25 +1829,73 @@
 
         let html = `
           <div class="reader-page-card" id="page-card-${currentPageIndex}">
-            <div class="head-badge">ഭാഗം ${part} - പേജ് ${pageNum} (${currentPageIndex + 1}/${totalPages})</div>
+            <div class="head-badge">ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'} (${currentPageIndex + 1}/${totalPages})</div>
         `;
-        if (arHtml) html += `<div class="ar-content" id="arContent">${arHtml}</div>`;
-        if (mlHtml) html += `<div class="ml-content" id="mlContent">${mlHtml}</div>`;
-        if (enHtml) html += `<div class="en-content" id="enContent">${enHtml}</div>`;
+        if (arHtml) html += `<div class="ar-content" id="arContent-${currentPageIndex}">${arHtml}</div>`;
+        if (mlHtml) html += `<div class="ml-content" id="mlContent-${currentPageIndex}">${mlHtml}</div>`;
+        if (enHtml) html += `<div class="en-content" id="enContent-${currentPageIndex}">${enHtml}</div>`;
         html += `</div>`;
 
         container.innerHTML = html;
         document.getElementById('readerPageNum').textContent = `${currentPageIndex + 1} / ${totalPages}`;
       }
 
-      const activePage = currentPages[currentPageIndex] || {};
-      const mlText = (activePage.Malayalam || '').replace(/<[^>]+>/g, '').trim();
-      document.getElementById('miniTitle').textContent = mlText.substring(0, 40) + '...';
-      document.getElementById('miniProgress').textContent = `ഭാഗം ${activePage.part || '?'} - പേജ് ${activePage.page || '?'}`;
       updateAudioUI();
-
       if (isVisualMode) updateVisualChunk();
       if (isPlaying && currentUtterance) highlightCurrentWord();
+    }
+
+    async function fetchSinglePageOnlineVirtual(targetIndex) {
+        try {
+            if(!supabaseClient) return null;
+            const tableName = `${currentBookId}_contents`;
+            const { data, error } = await supabaseClient.from(tableName).select('*').order('ID', { ascending: true }).range(targetIndex, targetIndex);
+            if (!error && data && data.length > 0) {
+                const item = data[0];
+                const pageObj = {
+                    id: item.ID, sequence: item.ID, part: item['Part Number'] || 1, page: item['Page Number'] || 1,
+                    Arabic: item['Arabic Text'] || '', Malayalam: item['Malayalam Text'] || '', English: item['English Text'] || ''
+                };
+                currentPages[targetIndex] = pageObj;
+                return pageObj;
+            }
+        } catch(e) { return null; }
+        return null;
+    }
+
+    function renderSpecificPageContent(idx, cardElement) {
+       const page = currentPages[idx];
+       if(!page) {
+           fetchSinglePageOnlineVirtual(idx).then(p => injectPageContent(p, idx, cardElement));
+           return;
+       }
+       injectPageContent(page, idx, cardElement);
+    }
+
+    function injectPageContent(page, idx, cardElement) {
+       if(!page) return;
+       const ar = page.Arabic || '';
+       const ml = page.Malayalam || '';
+       const en = page.English || '';
+
+       let arHtml = STATE.showAr && ar ? tokenizeText(ar, 'ar', idx) : '';
+       let mlHtml = STATE.showMl && ml ? tokenizeText(ml, 'ml', idx) : '';
+       let enHtml = STATE.showEn && en ? tokenizeText(en, 'en', idx) : '';
+
+       let contentHtml = '';
+       if (arHtml) contentHtml += `<div class="ar-content" id="arContent-${idx}">${arHtml}</div>`;
+       if (mlHtml) contentHtml += `<div class="ml-content" id="mlContent-${idx}">${mlHtml}</div>`;
+       if (enHtml) contentHtml += `<div class="en-content" id="enContent-${idx}">${enHtml}</div>`;
+
+       const wrapper = cardElement.querySelector('.page-content-wrapper');
+       if(wrapper) {
+           wrapper.style.display = 'block';
+           wrapper.style.minHeight = 'auto';
+           wrapper.innerHTML = contentHtml;
+       }
+       cardElement.dataset.loaded = "true";
+       
+       if(isPlaying && currentPageIndex === idx) highlightCurrentWord();
     }
 
     // LIGHTWEIGHT TOKENIZER (NO INLINE HANDLERS)
@@ -1843,17 +1908,10 @@
       let offset = 0;
 
       return tokens.map(token => {
-        if (token.trim() === '') {
-          offset += token.length;
-          return token;
-        }
+        if (token.trim() === '') { offset += token.length; return token; }
         const startOffset = offset;
         offset += token.length;
-        const isHighlighted = isPlaying && 
-                             currentPageIndex === pIdx &&
-                             currentWordOffset >= startOffset && 
-                             currentWordOffset < startOffset + token.length &&
-                             spokenLang === lang;
+        const isHighlighted = isPlaying && currentPageIndex === pIdx && currentWordOffset >= startOffset && currentWordOffset < startOffset + token.length && spokenLang === lang;
         const hlClass = isHighlighted ? `word-hl word-hl-${lang}` : '';
         return `<span class="word-token ${hlClass}" data-lang="${lang}" data-page="${pIdx}" data-offset="${startOffset}">${token}</span>`;
       }).join('');
@@ -1868,9 +1926,7 @@
           highlightCurrentWord();
           if (isVisualMode) updateVisualChunk();
         }
-      } else {
-        togglePlay();
-      }
+      } else { togglePlay(); }
     }
 
     function highlightCurrentWord() {
@@ -1880,13 +1936,16 @@
         el.classList.remove('word-hl', 'word-hl-ar', 'word-hl-ml', 'word-hl-en');
       });
 
-      const isVertical = document.getElementById('optVerticalScroll')?.checked;
       const langMap = { 'ar': 'arContent', 'ml': 'mlContent', 'en': 'enContent' };
       const baseId = langMap[spokenLang];
       if (!baseId) return;
 
-      const contentId = isVertical ? `${baseId}-${currentPageIndex}` : baseId;
-      const container = document.getElementById(contentId);
+      // Ensure we hit the correct page's content wrapper
+      const contentId = `${baseId}-${currentPageIndex}`; 
+      let container = document.getElementById(contentId);
+      
+      // Fallback for horizontal mode if IDs aren't fully matching
+      if (!container) container = document.getElementById(baseId);
       if (!container) return;
 
       const tokens = container.querySelectorAll('.word-token');
@@ -1928,7 +1987,6 @@
         readerView.classList.add('scroll-mode-horizontal');
         saveGeneralSetting('pref_scroll_vertical', false);
       }
-
       renderCurrentPage();
     }
 
@@ -2035,18 +2093,27 @@
     }
 
     // ================================================================
-    // NAVIGATION
+    // NAVIGATION (SMART FOR INFINITE SCROLL)
     // ================================================================
     function nextPage() {
       if (currentPageIndex < totalPages - 1) {
         currentPageIndex++;
         currentWordOffset = 0;
-        if (!currentPages[currentPageIndex]) {
-          fetchSinglePageOnline(currentPageIndex);
+        
+        const isVertical = document.getElementById('optVerticalScroll')?.checked;
+        if(isVertical) {
+             const nextCard = document.getElementById(`page-card-${currentPageIndex}`);
+             if(nextCard) nextCard.scrollIntoView({behavior: 'smooth', block: 'start'});
+             if (isPlaying) playAudio();
+             saveProgress();
         } else {
-          renderCurrentPage();
-          if (isPlaying) playAudio();
-          saveProgress();
+             if (!currentPages[currentPageIndex]) {
+                 fetchSinglePageOnline(currentPageIndex);
+             } else {
+                 renderCurrentPage();
+                 if (isPlaying) playAudio();
+                 saveProgress();
+             }
         }
       }
     }
@@ -2055,9 +2122,18 @@
       if (currentPageIndex > 0) {
         currentPageIndex--;
         currentWordOffset = 0;
-        renderCurrentPage();
-        if (isPlaying) playAudio();
-        saveProgress();
+
+        const isVertical = document.getElementById('optVerticalScroll')?.checked;
+        if(isVertical) {
+             const prevCard = document.getElementById(`page-card-${currentPageIndex}`);
+             if(prevCard) prevCard.scrollIntoView({behavior: 'smooth', block: 'start'});
+             if (isPlaying) playAudio();
+             saveProgress();
+        } else {
+             renderCurrentPage();
+             if (isPlaying) playAudio();
+             saveProgress();
+        }
       }
     }
 
@@ -2066,30 +2142,19 @@
       try {
         if (!supabaseClient) throw new Error("Offline");
         const tableName = `${currentBookId}_contents`;
-        const { data, error } = await supabaseClient
-          .from(tableName)
-          .select('*')
-          .order('ID', { ascending: true })
-          .range(targetIndex, targetIndex);
+        const { data, error } = await supabaseClient.from(tableName).select('*').order('ID', { ascending: true }).range(targetIndex, targetIndex);
 
         if (!error && data && data.length > 0) {
           const item = data[0];
           currentPages[targetIndex] = {
-            id: item.ID,
-            sequence: item.ID,
-            part: item['Part Number'] || 1,
-            page: item['Page Number'] || 1,
-            Arabic: item['Arabic Text'] || '',
-            Malayalam: item['Malayalam Text'] || '',
-            English: item['English Text'] || ''
+            id: item.ID, sequence: item.ID, part: item['Part Number'] || 1, page: item['Page Number'] || 1,
+            Arabic: item['Arabic Text'] || '', Malayalam: item['Malayalam Text'] || '', English: item['English Text'] || ''
           };
           hideLoading();
           renderCurrentPage();
           if (isPlaying) playAudio();
           saveProgress();
-        } else {
-          hideLoading();
-        }
+        } else { hideLoading(); }
       } catch(e) { hideLoading(); }
     }
 
@@ -2097,12 +2162,20 @@
       if (index >= 0 && index < totalPages) {
         currentPageIndex = index;
         currentWordOffset = 0;
-        if (!currentPages[currentPageIndex]) {
-          fetchSinglePageOnline(currentPageIndex);
+
+        const isVertical = document.getElementById('optVerticalScroll')?.checked;
+        if (isVertical) {
+            const card = document.getElementById(`page-card-${currentPageIndex}`);
+            if(card) card.scrollIntoView({behavior: 'auto', block: 'start'});
+            if (isPlaying) playAudio();
+            saveProgress();
         } else {
-          renderCurrentPage();
-          if (isPlaying) playAudio();
-          saveProgress();
+            if (!currentPages[currentPageIndex]) fetchSinglePageOnline(currentPageIndex);
+            else {
+              renderCurrentPage();
+              if (isPlaying) playAudio();
+              saveProgress();
+            }
         }
       }
     }
@@ -2111,10 +2184,7 @@
       if (currentBookId && currentPages.length > 0) {
         const chunk = currentPages[currentPageIndex];
         if (chunk) {
-          localStorage.setItem(`progress_${currentBookId}`, JSON.stringify({
-            sequence: chunk.sequence,
-            offset: currentWordOffset
-          }));
+          localStorage.setItem(`progress_${currentBookId}`, JSON.stringify({ sequence: chunk.sequence, offset: currentWordOffset }));
         }
       }
     }
@@ -2128,9 +2198,7 @@
       if (bookId && title) {
         card.style.display = 'flex';
         info.textContent = `${title}`;
-      } else {
-        card.style.display = 'none';
-      }
+      } else { card.style.display = 'none'; }
     }
 
     function continueReading() {
@@ -2175,7 +2243,14 @@
 
     function playAudio() {
       const page = currentPages[currentPageIndex];
-      if (!page) return;
+      if (!page) {
+          // If page not loaded in memory yet but exists online
+          fetchSinglePageOnlineVirtual(currentPageIndex).then(p => {
+              if(p) { currentPages[currentPageIndex] = p; playAudio(); }
+              else { stopAudio(); }
+          });
+          return;
+      }
 
       const lang = document.getElementById('optAudioLang').value;
       let text = '';
@@ -2199,9 +2274,7 @@
       let startText = text;
       if (currentWordOffset > 0 && currentWordOffset < text.length) {
         startText = text.substring(currentWordOffset);
-      } else {
-        currentWordOffset = 0;
-      }
+      } else { currentWordOffset = 0; }
 
       if (!startText.trim()) {
         if (currentPageIndex < totalPages - 1) { currentWordOffset = 0; nextPage(); }
@@ -2225,7 +2298,6 @@
       currentUtterance.rate = speedVal;
       saveGeneralSetting('pref_speed', speedVal);
 
-      // Smooth Animation Frame Bar
       if (animFrameReq) cancelAnimationFrame(animFrameReq);
       let progress = 0;
       function animateProgress() {
@@ -2538,7 +2610,7 @@
       const size = document.getElementById('optFontSize').value;
       document.documentElement.style.setProperty('--font-scale', size + 'px');
       saveGeneralSetting('m_rb_fsize', size);
-      renderCurrentPage();
+      if(!document.getElementById('optVerticalScroll').checked) renderCurrentPage();
     }
 
     function applyFonts() {
@@ -2551,7 +2623,7 @@
       saveGeneralSetting('pref_font_ml', ml);
       saveGeneralSetting('pref_font_ar', ar);
       saveGeneralSetting('pref_font_en', en);
-      renderCurrentPage();
+      if(!document.getElementById('optVerticalScroll').checked) renderCurrentPage();
     }
 
     function renderAllViews() {
