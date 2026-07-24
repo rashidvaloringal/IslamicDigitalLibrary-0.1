@@ -1132,9 +1132,7 @@
         <label class="setting-label">📖 Reader Settings</label>
         <div class="setting-row"><span>Font Size</span><input type="range" id="optFontSize" min="14" max="30" value="18" onchange="applyFontSize()"></div>
         <div class="setting-row"><span>Auto Scroll</span><input type="checkbox" id="optAutoScroll" checked onchange="updateAutoScroll()"></div>
-        <!-- UPDATED: TOUCH SEEK TOGGLE OPTION -->
         <div class="setting-row"><span>വാക്കിൽ തൊടുമ്പോൾ പ്ലേ ചെയ്യുക (Touch Seek)</span><input type="checkbox" id="optTouchSpeak" checked onchange="updateTouchSpeak()"></div>
-        <!-- SCROLL DIRECTION FEATURE -->
         <div class="setting-row"><span>Vertical Scrolling (താഴോട്ട്)</span><input type="checkbox" id="optVerticalScroll" onchange="updateScrollDirection()"></div>
         <div class="setting-row"><span>Display Arabic</span><input type="checkbox" id="optShowAr" checked onchange="renderAllViews()"></div>
         <div class="setting-row"><span>Display Malayalam</span><input type="checkbox" id="optShowMl" checked onchange="renderAllViews()"></div>
@@ -1372,13 +1370,12 @@
     }
 
     // ================================================================
-    // SUPABASE CONNECTION (OFFLINE-FIRST ENHANCED)
+    // SUPABASE CONNECTION (OFFLINE-FIRST SAFE INIT)
     // ================================================================
     async function initApp() {
       try {
         await IDB.init();
 
-        // 1. Restore IndexedDB books and metadata first
         const downloadedBooks = await IDB.getMeta('downloaded_books');
         if (downloadedBooks) {
           try {
@@ -1400,37 +1397,26 @@
           updateContinueReading();
         }
 
-        const savedUrl = localStorage.getItem('supabase_url');
-        const savedKey = localStorage.getItem('supabase_key');
-        const wasConnected = localStorage.getItem('supabase_connected') === 'true';
+        const savedUrl = localStorage.getItem('supabase_url') || window.ENV_SUPABASE_URL;
+        const savedKey = localStorage.getItem('supabase_key') || window.ENV_SUPABASE_KEY;
 
-        // 2. Offline persistence: Bypass login/setup screen if credentials existed or logged in before
-        if ((window.ENV_SUPABASE_URL && window.ENV_SUPABASE_KEY) || (savedUrl && savedKey) || wasConnected) {
-          const targetUrl = savedUrl || window.ENV_SUPABASE_URL;
-          const targetKey = savedKey || window.ENV_SUPABASE_KEY;
-
-          if (targetUrl && targetKey) {
-            try {
-              supabaseClient = window.supabase.createClient(targetUrl, targetKey);
-              document.getElementById('supabaseUrl').value = targetUrl;
-              document.getElementById('supabaseKey').value = targetKey;
-            } catch(e) {}
+        if (savedUrl && savedKey && window.supabase) {
+          try {
+            supabaseClient = window.supabase.createClient(savedUrl, savedKey);
+            document.getElementById('supabaseUrl').value = savedUrl;
+            document.getElementById('supabaseKey').value = savedKey;
+          } catch(e) {
+            console.warn("Supabase init deferred");
           }
-
-          document.getElementById('setupBox').style.display = 'none';
-          document.getElementById('loader').classList.add('hidden');
-          document.getElementById('homeView').classList.add('show');
-
-          // Attempt background online sync if connected
-          if (navigator.onLine && supabaseClient) {
-            loadBooks(true); // Silent sync
-          }
-          return;
         }
 
-        document.getElementById('setupBox').classList.add('show');
-        document.getElementById('loadStatus').textContent = '🔌 Connect to Supabase';
-        document.getElementById('loadSubStatus').textContent = 'Enter your Supabase credentials';
+        document.getElementById('setupBox').style.display = 'none';
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('homeView').classList.add('show');
+
+        if (navigator.onLine && supabaseClient) {
+          loadBooks(true);
+        }
       } catch (err) {
         console.error('Init error:', err);
         document.getElementById('setupBox').classList.add('show');
@@ -1450,6 +1436,7 @@
       msg.innerHTML = '<div class="status-msg info">⏳ Connecting...</div>';
 
       try {
+        if (!window.supabase) throw new Error("Supabase JS Library not loaded.");
         supabaseClient = window.supabase.createClient(url, key);
         localStorage.setItem('supabase_url', url);
         localStorage.setItem('supabase_key', key);
@@ -1459,23 +1446,10 @@
       }
     }
 
-    function useConfigCredentials() {
-      const msg = document.getElementById('statusMsg');
-      msg.innerHTML = '<div class="status-msg info">⏳ Using config.js...</div>';
-      supabaseClient = window.supabase.createClient(
-        window.ENV_SUPABASE_URL,
-        window.ENV_SUPABASE_KEY
-      );
-      document.getElementById('supabaseUrl').value = window.ENV_SUPABASE_URL;
-      document.getElementById('supabaseKey').value = window.ENV_SUPABASE_KEY;
-      localStorage.setItem('supabase_url', window.ENV_SUPABASE_URL);
-      localStorage.setItem('supabase_key', window.ENV_SUPABASE_KEY);
-      testConnection();
-    }
-
     async function testConnection(silent = false) {
       const msg = document.getElementById('statusMsg');
       try {
+        if (!supabaseClient) return;
         const { data, error } = await supabaseClient
           .from('master_catalog')
           .select('*')
@@ -1506,6 +1480,7 @@
     async function loadBooks(silent = false) {
       if (!silent) showLoading('📚 പുസ്തകങ്ങൾ ലോഡ് ചെയ്യുന്നു...');
       try {
+        if (!supabaseClient) throw new Error("Offline or no client");
         const { data, error } = await supabaseClient
           .from('master_catalog')
           .select('*')
@@ -1529,7 +1504,6 @@
         if (!silent) hideLoading();
       } catch(err) {
         if (!silent) hideLoading();
-        // Fallback gracefully to cache if offline
         const cached = localStorage.getItem('library_books');
         if (cached) renderBooks(JSON.parse(cached));
       }
@@ -1588,13 +1562,16 @@
     function toggleSearch() { document.getElementById('searchBar').classList.toggle('show'); }
 
     async function syncBooks() {
-      if (!supabaseClient) return;
+      if (!supabaseClient) {
+        alert("ഓൺലൈൻ കണക്ഷൻ ലഭ്യമല്ല!");
+        return;
+      }
       await loadBooks();
       alert('✅ Books synced!');
     }
 
     // ================================================================
-    // OPEN BOOK - HYBRID STREAMING
+    // OPEN BOOK - SAFE & FAST CHUNK LOAD
     // ================================================================
     async function openBook(bookId) {
       currentBookId = bookId;
@@ -1613,6 +1590,12 @@
           currentPages = idbData;
           totalPages = idbData.length;
         } else {
+          if (!supabaseClient) {
+            hideLoading();
+            alert("⚠️ ഈ പുസ്തകം കാണാൻ ഇന്റർനെറ്റ് കണക്ഷൻ ആവശ്യമാണ്!");
+            return;
+          }
+
           const tableName = `${bookId}_contents`;
 
           const { count, error: countError } = await supabaseClient
@@ -1672,6 +1655,11 @@
     async function downloadBookBackground(bookId) {
       if (isDownloadingInstance) {
         alert("മറ്റൊരു ഡൗൺലോഡ് നടക്കുന്നുണ്ട്!");
+        return;
+      }
+
+      if (!supabaseClient) {
+        alert("ഡൗൺലോഡ് ചെയ്യാൻ ഇൻ്റർനെറ്റ് കണക്ഷൻ വേണം!");
         return;
       }
 
@@ -1785,7 +1773,7 @@
     }
 
     // ================================================================
-    // RENDER PAGE WITH VERTICAL / HORIZONTAL MODE ENHANCEMENTS
+    // RENDER PAGE (LAZY CHUNK OPTIMIZED TO PREVENT CRASHING)
     // ================================================================
     function renderCurrentPage() {
       if (!currentPages || currentPages.length === 0) return;
@@ -1798,10 +1786,15 @@
       });
 
       if (isVertical) {
-        // Continuous PDF/Docs style Vertical view
+        // Optimized: Render window chunk (Current page +/- 10 pages) to prevent UI freeze
         let fullHtml = '';
-        currentPages.forEach((page, idx) => {
-          if (!page) return;
+        const startIdx = Math.max(0, currentPageIndex - 2);
+        const endIdx = Math.min(currentPages.length - 1, currentPageIndex + 15);
+
+        for (let idx = startIdx; idx <= endIdx; idx++) {
+          const page = currentPages[idx];
+          if (!page) continue;
+
           const ar = page.Arabic || '';
           const ml = page.Malayalam || '';
           const en = page.English || '';
@@ -1812,7 +1805,7 @@
           let mlHtml = STATE.showMl && ml ? tokenizeText(ml, 'ml', idx) : '';
           let enHtml = STATE.showEn && en ? tokenizeText(en, 'en', idx) : '';
 
-          if (idx > 0) {
+          if (idx > startIdx) {
             fullHtml += `
               <div class="page-break-divider">
                 <span class="page-break-label">--- Page ${pageNum} Break ---</span>
@@ -1828,7 +1821,7 @@
           if (mlHtml) fullHtml += `<div class="ml-content" id="mlContent-${idx}">${mlHtml}</div>`;
           if (enHtml) fullHtml += `<div class="en-content" id="enContent-${idx}">${enHtml}</div>`;
           fullHtml += `</div>`;
-        });
+        }
 
         container.innerHTML = fullHtml;
       } else {
@@ -1904,7 +1897,7 @@
     }
 
     function seekToWord(offset, lang, pIdx = currentPageIndex) {
-      if (!touchSpeakEnabled) return; // Ignore touch seek if disabled in Settings
+      if (!touchSpeakEnabled) return; 
 
       currentPageIndex = pIdx;
       currentWordOffset = offset;
@@ -2125,6 +2118,7 @@
     async function fetchSinglePageOnline(targetIndex) {
       showLoading('📖 Loading page online...');
       try {
+        if (!supabaseClient) throw new Error("Offline");
         const tableName = `${currentBookId}_contents`;
         const { data, error } = await supabaseClient
           .from(tableName)
@@ -2827,17 +2821,14 @@
         document.getElementById('optCaptionStyle').value = captionStyle;
       }
 
-      // Load Touch Speak Setting
       touchSpeakEnabled = localStorage.getItem('pref_touch_speak') !== 'false';
       const touchCheck = document.getElementById('optTouchSpeak');
       if (touchCheck) touchCheck.checked = touchSpeakEnabled;
 
-      // Load Auto Scroll
       autoScrollEnabled = localStorage.getItem('pref_auto_scroll') !== 'false';
       const autoScrollCheck = document.getElementById('optAutoScroll');
       if (autoScrollCheck) autoScrollCheck.checked = autoScrollEnabled;
 
-      // Load Display Ar/Ml/En
       STATE.showAr = localStorage.getItem('pref_show_ar') !== 'false';
       STATE.showMl = localStorage.getItem('pref_show_ml') !== 'false';
       STATE.showEn = localStorage.getItem('pref_show_en') !== 'false';
@@ -2845,7 +2836,6 @@
       if (document.getElementById('optShowMl')) document.getElementById('optShowMl').checked = STATE.showMl;
       if (document.getElementById('optShowEn')) document.getElementById('optShowEn').checked = STATE.showEn;
 
-      // Load Scroll Direction Preference
       const scrollVertical = localStorage.getItem('pref_scroll_vertical') === 'true';
       const scrollCheck = document.getElementById('optVerticalScroll');
       if (scrollCheck) {
@@ -2853,7 +2843,6 @@
         updateScrollDirection();
       }
 
-      // Load YouTube ID
       const ytId = localStorage.getItem('pref_youtube_id') || '';
       if (document.getElementById('optYoutubeId')) document.getElementById('optYoutubeId').value = ytId;
     }
