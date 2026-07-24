@@ -11,7 +11,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="apple-touch-icon" href="icon-192.png">
 
-  <!-- CONFIG FILE LINKED HERE -->
+  <!-- ===== PRELOAD & OPTIMIZATIONS ===== -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+
+  <!-- CONFIG FILE -->
   <script src="config.js"></script>
 
   <title>📚 Islamic Digital Library Pro</title>
@@ -22,7 +28,7 @@
 
   <style>
     /* ================================================================
-       ROOT VARIABLES & ACCELERATED THEMING
+       ROOT VARIABLES
        ================================================================ */
     :root {
       --primary-green: #1b4d3e;
@@ -42,6 +48,7 @@
       --font-ml: 'Manjari', sans-serif;
       --font-en: sans-serif;
       --highlight-color: #facc15;
+      --transition-speed: 0.2s;
     }
 
     [data-theme="dark"] {
@@ -75,6 +82,7 @@
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    
     body {
       background: var(--bg);
       color: var(--text-dark);
@@ -84,9 +92,11 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      transition: background 0.2s, color 0.2s;
+      transition: background var(--transition-speed), color var(--transition-speed);
     }
+    
     button, input, select { font-family: inherit; border: none; outline: none; background: transparent; color: inherit; cursor: pointer; }
+    
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: var(--bg); }
     ::-webkit-scrollbar-thumb { background: var(--primary-green); border-radius: 4px; }
@@ -146,7 +156,7 @@
       font-weight: bold;
       font-size: 14px;
       cursor: pointer;
-      transition: 0.2s;
+      transition: transform 0.15s;
     }
     #setupBox button:active { transform: scale(0.97); }
     .setup-hint { font-size: 12px; color: var(--text-muted); text-align: center; }
@@ -213,7 +223,7 @@
       font-size: 13px;
       text-transform: uppercase;
       border-bottom: 3px solid transparent;
-      transition: 0.2s;
+      transition: 0.3s;
     }
     .tab-item.active { color: white; border-bottom-color: white; }
 
@@ -230,9 +240,9 @@
       align-items: center;
       justify-content: space-between;
       cursor: pointer;
-      transition: 0.2s;
+      transition: transform 0.15s;
     }
-    .continue-card:hover { transform: scale(1.01); }
+    .continue-card:active { transform: scale(0.98); }
     .continue-card .info h4 { color: var(--primary-green); font-size: 14px; margin-bottom: 4px; }
     .continue-card .info p { font-size: 12px; color: var(--text-muted); }
     .continue-card .btn { background: var(--primary-green); color: white; padding: 8px 20px; border-radius: 30px; font-size: 13px; }
@@ -251,7 +261,7 @@
       border: 1px solid var(--border);
       display: flex;
       flex-direction: column;
-      transition: transform 0.2s;
+      transition: transform 0.15s;
       cursor: pointer;
       position: relative;
     }
@@ -301,9 +311,10 @@
       align-items: center;
       justify-content: center;
       gap: 4px;
+      transition: background 0.15s;
     }
+    .book-footer button:active { background: var(--border); }
     .book-footer button:first-child { border-right: 1px solid var(--border); }
-    .book-footer button:active { transform: scale(0.95); }
     .open-btn { color: var(--primary-green); }
     .dl-btn { color: #2563eb; }
     .status-badge {
@@ -338,11 +349,12 @@
       flex-direction: column;
       align-items: center;
       gap: 4px;
+      transition: color 0.2s;
     }
     .nav-link i { font-size: 22px; }
     .nav-link.active { color: var(--primary-green); font-weight: bold; }
 
-    /* ===== READER (HIGH PERFORMANCE OPTIMIZED) ===== */
+    /* ===== READER ===== */
     #readerView {
       display: none;
       flex-direction: column;
@@ -363,6 +375,7 @@
       flex-shrink: 0;
       border-bottom: 1px solid var(--border);
       min-height: 55px;
+      z-index: 10;
     }
     .back-btn {
       background: none;
@@ -382,7 +395,7 @@
       text-overflow: ellipsis;
     }
     .reader-actions { display: flex; gap: 16px; font-size: 18px; }
-    .reader-actions i { cursor: pointer; color: var(--text-muted); }
+    .reader-actions i { cursor: pointer; color: var(--text-muted); transition: color 0.2s; }
     .reader-actions .active-bm { color: #f59e0b; }
 
     .reader-content {
@@ -390,17 +403,12 @@
       overflow-y: auto;
       padding: 15px 15px 90px 15px;
       scroll-behavior: smooth;
-      will-change: transform, scroll-position;
+      -webkit-overflow-scrolling: touch;
     }
 
-    /* VIRTUAL DOM OPTIMIZED SCROLL CLASSES */
-    .scroll-mode-vertical #readerPageContainer {
-      display: flex;
-      flex-direction: column;
-      gap: 20px; /* Space between continuous pages */
-    }
-    .scroll-mode-vertical .reader-pagination {
-      display: none !important;
+    /* ===== SCROLL MODE ===== */
+    .scroll-mode-vertical .reader-page-card {
+      margin-bottom: 20px;
     }
     .scroll-mode-horizontal #readerPageContainer {
       display: flex;
@@ -415,35 +423,16 @@
       width: 100%;
     }
 
-    .page-break-divider {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 15px 0;
-      position: relative;
-    }
-    .page-break-label {
-      background: transparent;
-      color: var(--text-muted);
-      font-size: 12px;
-      font-weight: bold;
-      padding: 5px 15px;
-      letter-spacing: 1px;
-    }
-
     .reader-page-card {
       background: var(--surface);
       padding: 30px 25px;
       border-radius: var(--radius);
-      box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+      box-shadow: var(--shadow);
       border: 1px solid var(--border);
-      min-height: 50vh;
+      min-height: 60vh;
       position: relative;
-      margin-bottom: 15px;
-      content-visibility: auto; /* CORE OPTIMIZATION FOR INFINITE SCROLL */
-      contain-intrinsic-size: 600px;
+      will-change: transform;
     }
-    
     .head-badge {
       display: table;
       margin: 0 auto 20px auto;
@@ -485,9 +474,23 @@
       text-align: justify;
     }
 
-    /* ===== LIGHTWEIGHT WORD HIGHLIGHT ===== */
+    .page-divider {
+      text-align: center;
+      padding: 12px 0;
+      margin: 8px 0 16px 0;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: bold;
+      border-top: 2px dashed var(--border);
+      border-bottom: 2px dashed var(--border);
+      background: var(--bg);
+      letter-spacing: 2px;
+    }
+
+    /* ===== WORD HIGHLIGHT ===== */
     .word-token {
       cursor: pointer;
+      transition: background 0.15s, transform 0.15s;
       padding: 0 2px;
       border-radius: 4px;
       display: inline-block;
@@ -497,13 +500,14 @@
       color: #000 !important;
       font-weight: bold;
       border-radius: 4px;
-      box-shadow: 0 2px 12px rgba(250,204,21,0.4);
+      box-shadow: 0 2px 12px rgba(250,204,21,0.3);
+      transform: scale(1.02);
     }
     .word-hl-ar { background: #81d4fa !important; color: #000 !important; }
     .word-hl-ml { background: #facc15 !important; color: #000 !important; }
     .word-hl-en { background: #a8e6cf !important; color: #000 !important; }
 
-    /* ===== VISUAL MODE WITH 10 STYLES CSS ===== */
+    /* ===== VISUAL MODE ===== */
     .visual-mode {
       position: fixed;
       inset: 0;
@@ -572,8 +576,6 @@
       margin: 0 4px;
       transition: all 0.2s ease;
     }
-
-    /* ===== CAPTION STYLES ===== */
     .style-karaoke .vis-word-token.active { color: #facc15 !important; font-weight: bold; transform: scale(1.05); }
     .style-wordbyword .vis-word-token { opacity: 0.3; }
     .style-wordbyword .vis-word-token.active { opacity: 1; color: #fff !important; font-weight: bold; }
@@ -636,7 +638,9 @@
       background: var(--surface);
       border-radius: 50px;
       border: 1px solid var(--border);
+      transition: opacity 0.3s;
     }
+    .reader-pagination.hidden { display: none; }
     .reader-pagination button {
       padding: 8px 18px;
       border-radius: 30px;
@@ -644,7 +648,9 @@
       border: 1px solid var(--border);
       font-weight: bold;
       color: var(--text-dark);
+      transition: background 0.15s;
     }
+    .reader-pagination button:active { background: var(--border); }
     .page-num { font-weight: bold; color: var(--primary-green); font-size: 15px; }
 
     /* ===== LOADING OVERLAY ===== */
@@ -683,7 +689,8 @@
     .audio-title-text { font-size: 18px; font-weight: bold; margin-bottom: 5px; }
     .audio-meta { color: var(--text-muted); font-size: 13px; margin-bottom: 20px; }
     .audio-controls { display: flex; justify-content: center; align-items: center; gap: 25px; }
-    .audio-controls i { font-size: 28px; color: var(--primary-green); cursor: pointer; }
+    .audio-controls i { font-size: 28px; color: var(--primary-green); cursor: pointer; transition: transform 0.15s; }
+    .audio-controls i:active { transform: scale(0.9); }
     .play-big {
       font-size: 48px !important;
       background: var(--primary-green);
@@ -713,6 +720,8 @@
     .mini-title { font-weight: bold; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .mini-progress { font-size: 10px; color: var(--text-muted); }
     .mini-controls { display: flex; gap: 14px; font-size: 18px; color: var(--primary-green); align-items: center; }
+    .mini-controls i { transition: transform 0.15s; }
+    .mini-controls i:active { transform: scale(0.85); }
 
     /* ===== READER BOTTOM NAV ===== */
     .reader-bottom-nav {
@@ -739,6 +748,7 @@
       height: 100%;
       cursor: pointer;
       padding: 5px 0;
+      transition: color 0.2s;
     }
     .nav-tab.active { color: var(--primary-green); }
     .nav-tab i { font-size: 20px; }
@@ -783,7 +793,7 @@
       font-weight: bold;
     }
     .modal-close { font-size: 22px; cursor: pointer; background: none; border: none; color: var(--text-dark); padding: 5px; }
-    .modal-body { flex: 1; overflow-y: auto; padding: 20px; }
+    .modal-body { flex: 1; overflow-y: auto; padding: 20px; -webkit-overflow-scrolling: touch; }
 
     .setting-group { margin-bottom: 18px; border-bottom: 1px dashed var(--border); padding-bottom: 15px; }
     .setting-label {
@@ -830,8 +840,10 @@
       cursor: pointer;
       background: var(--bg);
       color: var(--text-dark);
+      transition: all 0.2s;
     }
     .theme-btn.active { border-color: var(--primary-green); background: var(--primary-light); color: var(--primary-green); }
+    .theme-btn:active { transform: scale(0.95); }
 
     /* ===== TOC ===== */
     .toc-breadcrumb {
@@ -850,6 +862,7 @@
       padding: 12px 15px;
       border-bottom: 1px solid var(--border);
       color: var(--text-dark);
+      transition: 0.15s;
     }
     .toc-item-row {
       display: flex;
@@ -935,7 +948,9 @@
       font-weight: bold;
       white-space: nowrap;
       font-size: 13px;
+      transition: transform 0.15s;
     }
+    .jump-to-page-container button:active { transform: scale(0.95); }
 
     @media (max-width: 600px) {
       .book-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
@@ -1008,7 +1023,7 @@
     <div class="loader-text" id="loadingText">📖 Loading...</div>
   </div>
 
-  <div id="readerView" class="scroll-mode-horizontal">
+  <div id="readerView" class="scroll-mode-vertical">
     <header class="reader-header">
       <button class="back-btn" onclick="closeReader()"><i class="fas fa-arrow-left"></i></button>
       <span class="reader-title" id="readerTitle">Loading...</span>
@@ -1022,9 +1037,9 @@
     <div class="reader-content" id="readerContent">
       <div id="ebookView">
         <div id="readerPageContainer">
-          <!-- JS INJECTS PAGES HERE -->
+          <!-- Pages rendered dynamically -->
         </div>
-        <div class="reader-pagination" id="readerPagination">
+        <div class="reader-pagination hidden" id="readerPagination">
           <button onclick="prevPage()"><i class="fas fa-chevron-left"></i> Prev</button>
           <span class="page-num" id="readerPageNum">0 / 0</span>
           <button onclick="nextPage()">Next <i class="fas fa-chevron-right"></i></button>
@@ -1050,7 +1065,7 @@
         <div style="text-align:center; padding:40px; color:var(--text-muted);">
           <i class="fas fa-wand-magic-sparkles" style="font-size:48px; color:var(--primary-green);"></i>
           <p style="margin-top:15px; font-weight:bold;">Cinematic Reels View</p>
-          <button onclick="openVisualMode()" style="background:var(--primary-green); color:white; border-radius:30px; padding:10px 20px; border:none; font-weight:bold;"><i class="fas fa-eye"></i> Launch Visual Screen</button>
+          <button onclick="openVisualMode()" style="background:var(--primary-green); color:white; border-radius:30px; padding:10px 20px; border:none; font-weight:bold; transition:transform 0.15s;"><i class="fas fa-eye"></i> Launch Visual Screen</button>
         </div>
       </div>
     </div>
@@ -1104,7 +1119,7 @@
       <div class="setting-group">
         <label class="setting-label">🎨 Theme</label>
         <div class="theme-grid">
-          <div class="theme-btn active" id="th-light" onclick="setTheme('light')">☀️ Light</div>
+          <div class="theme-btn" id="th-light" onclick="setTheme('light')">☀️ Light</div>
           <div class="theme-btn" id="th-dark" onclick="setTheme('dark')">🌙 Dark</div>
           <div class="theme-btn" id="th-amoled" onclick="setTheme('amoled')">⚫ AMOLED</div>
           <div class="theme-btn" id="th-sepia" onclick="setTheme('sepia')">📜 Sepia</div>
@@ -1120,11 +1135,11 @@
 
       <div class="setting-group">
         <label class="setting-label">📖 Reader Settings</label>
-        <div class="setting-row"><span>Font Size</span><input type="range" id="optFontSize" min="14" max="30" value="18" onchange="applyFontSize()"></div>
+        <div class="setting-row"><span>Font Size</span><input type="range" id="optFontSize" min="12" max="30" value="12" onchange="applyFontSize()"></div>
         <div class="setting-row"><span>Auto Scroll</span><input type="checkbox" id="optAutoScroll" checked onchange="updateAutoScroll()"></div>
-        <div class="setting-row"><span>വാക്കിൽ തൊടുമ്പോൾ പ്ലേ ചെയ്യുക (Touch Seek)</span><input type="checkbox" id="optTouchSpeak" checked onchange="updateTouchSpeak()"></div>
-        <div class="setting-row"><span>Vertical Scrolling (താഴോട്ട്)</span><input type="checkbox" id="optVerticalScroll" onchange="updateScrollDirection()"></div>
-        <div class="setting-row"><span>Page Dividers (പേജ് വേർതിരിവ്)</span><input type="checkbox" id="optShowDividers" checked onchange="updateDividers()"></div>
+        <div class="setting-row"><span>Vertical Scrolling (Ebook)</span><input type="checkbox" id="optVerticalScroll" checked onchange="updateScrollDirection()"></div>
+        <div class="setting-row"><span>Show Page Dividers</span><input type="checkbox" id="optShowDividers" checked onchange="renderPages()"></div>
+        <div class="setting-row"><span>Tap to Highlight & TTS</span><input type="checkbox" id="optTapTTS" checked onchange="savePreferencesToIDB()"></div>
         <div class="setting-row"><span>Display Arabic</span><input type="checkbox" id="optShowAr" checked onchange="renderAllViews()"></div>
         <div class="setting-row"><span>Display Malayalam</span><input type="checkbox" id="optShowMl" checked onchange="renderAllViews()"></div>
         <div class="setting-row"><span>Display English</span><input type="checkbox" id="optShowEn" checked onchange="renderAllViews()"></div>
@@ -1139,15 +1154,15 @@
         </select>
         <select id="optVoice" onchange="applyAudioSettings(true)" style="margin-top:5px;"></select>
         <div class="setting-row"><span>Speed</span><input type="range" id="optSpeed" min="0.5" max="1.5" step="0.1" value="1.0" onchange="applyAudioSettings(true)"></div>
-        <div class="setting-row"><span>Auto Next Page</span><input type="checkbox" id="optAutoNext" checked onchange="saveGeneralSetting('pref_auto_next', this.checked)"></div>
-        <div class="setting-row"><span>Background Play (Screen Off)</span><input type="checkbox" id="optBgPlay" checked onchange="saveGeneralSetting('pref_bg_play', this.checked)"></div>
+        <div class="setting-row"><span>Auto Next Page</span><input type="checkbox" id="optAutoNext" checked></div>
+        <div class="setting-row"><span>Background Play (Screen Off)</span><input type="checkbox" id="optBgPlay" checked></div>
       </div>
 
       <div class="setting-group">
         <label class="setting-label">🔊 Highlight Language</label>
         <div class="lang-selector">
-          <button class="lang-btn active" id="lang-ar" onclick="setSpokenLang('ar')">🇦🇪 Arabic</button>
-          <button class="lang-btn" id="lang-ml" onclick="setSpokenLang('ml')">🇮🇳 Malayalam</button>
+          <button class="lang-btn" id="lang-ar" onclick="setSpokenLang('ar')">🇦🇪 Arabic</button>
+          <button class="lang-btn active" id="lang-ml" onclick="setSpokenLang('ml')">🇮🇳 Malayalam</button>
           <button class="lang-btn" id="lang-en" onclick="setSpokenLang('en')">🇬🇧 English</button>
         </div>
       </div>
@@ -1171,7 +1186,7 @@
       <div class="setting-group">
         <label class="setting-label">🎬 Visual Screen Background</label>
         <input type="text" id="optYoutubeId" placeholder="YouTube Video ID" style="width:100%; padding:12px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-dark);">
-        <button style="width:100%; margin-top:5px; padding:8px; background:var(--primary-green); color:white; border-radius:6px; border:none; font-weight:bold;" onclick="applyVisualBg()">Update Background</button>
+        <button style="width:100%; margin-top:5px; padding:8px; background:var(--primary-green); color:white; border-radius:6px; border:none; font-weight:bold; transition:transform 0.15s;" onclick="applyVisualBg()">Update Background</button>
       </div>
 
       <div class="setting-group">
@@ -1192,7 +1207,7 @@
           <span style="font-size:13px; background:var(--bg); padding:8px 16px; border-radius:8px;"><i class="fas fa-hdd"></i> Size: <span id="storageSize">0 MB</span></span>
         </div>
         <div id="idbStatusMsg" style="font-size:12px; padding:8px; background:var(--bg); border-radius:6px; margin-bottom:8px;"></div>
-        <button onclick="clearAllData()" style="width:100%; margin-top:10px; padding:10px; background:#dc3545; color:white; border-radius:8px; font-weight:bold; border:none;">🗑 Clear All Data</button>
+        <button onclick="clearAllData()" style="width:100%; margin-top:10px; padding:10px; background:#dc3545; color:white; border-radius:8px; font-weight:bold; border:none; transition:transform 0.15s;">🗑 Clear All Data</button>
       </div>
     </div>
   </div>
@@ -1205,11 +1220,14 @@
 
   <script>
     // ================================================================
-    // CONFIG & HIGH PERFORMANCE GLOBAL STATE
+    // CONFIG - Fallback if config.js missing
     // ================================================================
     window.ENV_SUPABASE_URL = window.ENV_SUPABASE_URL || '';
     window.ENV_SUPABASE_KEY = window.ENV_SUPABASE_KEY || '';
 
+    // ================================================================
+    // STATE
+    // ================================================================
     let supabaseClient = null;
     let allBooks = [];
     let currentBookId = null;
@@ -1219,111 +1237,237 @@
     let isPlaying = false;
     let synth = window.speechSynthesis;
     let allVoices = [];
-    let animFrameReq = null;
-    let spokenLang = 'ar';
+    let audioProgressInterval = null;
+    let spokenLang = 'ml';
     let autoScrollEnabled = true;
-    let touchSpeakEnabled = true;
     let currentUtterance = null;
     let currentWordOffset = 0;
     let isVisualMode = false;
     let isVoiceChanging = false;
-
+    let isDownloadingInstance = false;
+    let renderTimeout = null;
+    let scrollTimeout = null;
     let tocTree = [];
     let tocPath = [];
-    let isDownloadingInstance = false;
-    
-    let pageObserver = null;
-    let activePageObserver = null;
-
-    const STATE = {
-      showAr: true,
-      showMl: true,
-      showEn: true,
-      showDividers: true,
-      fontScale: 18,
-      theme: 'light',
-      mode: 'ebook'
-    };
+    let dbCache = {};
 
     // ================================================================
-    // INDEXEDDB ENGINE (FAST DIRECT READ)
+    // INDEXEDDB ENGINE (Optimized with cache)
     // ================================================================
     const IDB = {
       dbName: "IslamicLibraryV5",
-      version: 1,
+      version: 2,
       db: null,
+      cache: new Map(),
+      
       init() {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           let req = indexedDB.open(this.dbName, this.version);
           req.onupgradeneeded = (e) => {
             let db = e.target.result;
-            if (!db.objectStoreNames.contains("books")) db.createObjectStore("books", { keyPath: "bookId" });
-            if (!db.objectStoreNames.contains("metadata")) db.createObjectStore("metadata", { keyPath: "key" });
+            if (!db.objectStoreNames.contains("books")) {
+              db.createObjectStore("books", { keyPath: "bookId" });
+            }
+            if (!db.objectStoreNames.contains("metadata")) {
+              db.createObjectStore("metadata", { keyPath: "key" });
+            }
           };
           req.onsuccess = (e) => {
             this.db = e.target.result;
             resolve(this.db);
           };
-          req.onerror = () => resolve(null);
+          req.onerror = (e) => reject(e.target.error);
         });
       },
+      
       get(bookId) {
         return new Promise((resolve) => {
+          if (this.cache.has(bookId)) {
+            resolve(this.cache.get(bookId));
+            return;
+          }
           if (!this.db) return resolve(null);
           try {
             let tx = this.db.transaction("books", "readonly");
-            let req = tx.objectStore("books").get(bookId);
-            req.onsuccess = () => resolve(req.result ? req.result.data : null);
+            let store = tx.objectStore("books");
+            let req = store.get(bookId);
+            req.onsuccess = () => {
+              const data = req.result ? req.result.data : null;
+              if (data) this.cache.set(bookId, data);
+              resolve(data);
+            };
             req.onerror = () => resolve(null);
           } catch(e) { resolve(null); }
         });
       },
+      
       set(bookId, data) {
         return new Promise((resolve) => {
+          this.cache.set(bookId, data);
           if (!this.db) return resolve();
           try {
             let tx = this.db.transaction("books", "readwrite");
-            tx.objectStore("books").put({ bookId: bookId, data: data, updatedAt: Date.now() });
+            let store = tx.objectStore("books");
+            store.put({ bookId: bookId, data: data, updatedAt: Date.now() });
             tx.oncomplete = () => resolve();
             tx.onerror = () => resolve();
           } catch(e) { resolve(); }
         });
       },
+      
       delete(bookId) {
+        this.cache.delete(bookId);
         return new Promise((resolve) => {
           if (!this.db) return resolve();
           try {
             let tx = this.db.transaction("books", "readwrite");
-            tx.objectStore("books").delete(bookId);
+            let store = tx.objectStore("books");
+            store.delete(bookId);
             tx.oncomplete = () => resolve();
           } catch(e) { resolve(); }
         });
       },
+      
       setMeta(key, value) {
         return new Promise((resolve) => {
           if (!this.db) return resolve();
           try {
             let tx = this.db.transaction("metadata", "readwrite");
-            tx.objectStore("metadata").put({ key: key, value: value, updatedAt: Date.now() });
+            let store = tx.objectStore("metadata");
+            store.put({ key: key, value: value, updatedAt: Date.now() });
             tx.oncomplete = () => resolve();
           } catch(e) { resolve(); }
         });
       },
+      
       getMeta(key) {
         return new Promise((resolve) => {
           if (!this.db) return resolve(null);
           try {
             let tx = this.db.transaction("metadata", "readonly");
-            let req = tx.objectStore("metadata").get(key);
+            let store = tx.objectStore("metadata");
+            let req = store.get(key);
             req.onsuccess = () => resolve(req.result ? req.result.value : null);
-            req.onerror = () => resolve(null);
           } catch(e) { resolve(null); }
         });
       }
     };
 
     // ================================================================
-    // HARDWARE ACCELERATED AUDIO CONTEXT
+    // DEFAULT PREFERENCES
+    // ================================================================
+    const DEFAULT_PREFS = {
+      theme: 'amoled',
+      fontMl: "'Manjari', sans-serif",
+      fontAr: "'Amiri', serif",
+      fontEn: "sans-serif",
+      fontSize: 12,
+      showAr: true,
+      showMl: true,
+      showEn: true,
+      verticalScroll: true,  // Default: Vertical Scroll ON
+      showDividers: true,
+      autoScroll: true,
+      tapToTTS: true,
+      audioLang: 'ml-IN',
+      voice: '',
+      speed: 1.0,
+      autoNext: true,
+      bgPlay: true,
+      spokenLang: 'ml',
+      captionStyle: 'style-karaoke',
+      youtubeId: '',
+      bgMusic: 'none'
+    };
+
+    let prefs = { ...DEFAULT_PREFS };
+
+    // ================================================================
+    // SETTINGS STORAGE
+    // ================================================================
+    async function loadPreferencesFromIDB() {
+      try {
+        const saved = await IDB.getMeta('user_preferences');
+        if (saved) {
+          prefs = { ...DEFAULT_PREFS, ...JSON.parse(saved) };
+        } else {
+          prefs = { ...DEFAULT_PREFS };
+          await savePreferencesToIDB();
+        }
+      } catch(e) {
+        prefs = { ...DEFAULT_PREFS };
+      }
+      applyPreferencesToDOM();
+    }
+
+    async function savePreferencesToIDB() {
+      prefs.theme = document.querySelector('.theme-btn.active')?.id?.replace('th-','') || 'amoled';
+      prefs.fontMl = document.getElementById('optFontMl').value;
+      prefs.fontAr = document.getElementById('optFontAr').value;
+      prefs.fontEn = document.getElementById('optFontEn').value;
+      prefs.fontSize = parseInt(document.getElementById('optFontSize').value) || 12;
+      prefs.showAr = document.getElementById('optShowAr').checked;
+      prefs.showMl = document.getElementById('optShowMl').checked;
+      prefs.showEn = document.getElementById('optShowEn').checked;
+      prefs.verticalScroll = document.getElementById('optVerticalScroll').checked;
+      prefs.showDividers = document.getElementById('optShowDividers').checked;
+      prefs.autoScroll = document.getElementById('optAutoScroll').checked;
+      prefs.tapToTTS = document.getElementById('optTapTTS').checked;
+      prefs.audioLang = document.getElementById('optAudioLang').value;
+      prefs.voice = document.getElementById('optVoice').value;
+      prefs.speed = parseFloat(document.getElementById('optSpeed').value) || 1.0;
+      prefs.autoNext = document.getElementById('optAutoNext').checked;
+      prefs.bgPlay = document.getElementById('optBgPlay').checked;
+      prefs.spokenLang = spokenLang;
+      prefs.captionStyle = document.getElementById('optCaptionStyle').value;
+      prefs.youtubeId = document.getElementById('optYoutubeId').value.trim();
+      prefs.bgMusic = document.getElementById('optBgMusic').value;
+
+      await IDB.setMeta('user_preferences', JSON.stringify(prefs));
+    }
+
+    function applyPreferencesToDOM() {
+      document.querySelectorAll('.theme-btn').forEach(el => el.classList.remove('active'));
+      const themeBtn = document.getElementById('th-' + prefs.theme);
+      if (themeBtn) themeBtn.classList.add('active');
+      document.documentElement.setAttribute('data-theme', prefs.theme);
+
+      document.getElementById('optFontMl').value = prefs.fontMl;
+      document.getElementById('optFontAr').value = prefs.fontAr;
+      document.getElementById('optFontEn').value = prefs.fontEn;
+      applyFonts();
+
+      document.getElementById('optFontSize').value = prefs.fontSize;
+      applyFontSize();
+
+      document.getElementById('optShowAr').checked = prefs.showAr;
+      document.getElementById('optShowMl').checked = prefs.showMl;
+      document.getElementById('optShowEn').checked = prefs.showEn;
+      document.getElementById('optVerticalScroll').checked = prefs.verticalScroll;
+      document.getElementById('optShowDividers').checked = prefs.showDividers;
+      document.getElementById('optAutoScroll').checked = prefs.autoScroll;
+      document.getElementById('optTapTTS').checked = prefs.tapToTTS;
+      document.getElementById('optAudioLang').value = prefs.audioLang;
+      document.getElementById('optVoice').value = prefs.voice;
+      document.getElementById('optSpeed').value = prefs.speed;
+      document.getElementById('optAutoNext').checked = prefs.autoNext;
+      document.getElementById('optBgPlay').checked = prefs.bgPlay;
+      document.getElementById('optCaptionStyle').value = prefs.captionStyle;
+      document.getElementById('optYoutubeId').value = prefs.youtubeId;
+      document.getElementById('optBgMusic').value = prefs.bgMusic;
+
+      spokenLang = prefs.spokenLang || 'ml';
+      document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
+      const langBtn = document.getElementById('lang-' + spokenLang);
+      if (langBtn) langBtn.classList.add('active');
+
+      updateScrollDirection(false);
+      handleBgMusic(false);
+      applyCaptionStyle(false);
+    }
+
+    // ================================================================
+    // AUDIO CONTEXT
     // ================================================================
     let audioCtx = null;
     function initAudioContext() {
@@ -1346,54 +1490,60 @@
     let wakeLock = null;
     async function requestWakeLock() {
       try {
-        if ('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
       } catch(e) {}
     }
 
     // ================================================================
-    // INITIALIZATION
+    // SUPABASE CONNECTION
     // ================================================================
     async function initApp() {
       try {
         await IDB.init();
-
-        // Event Delegation setup for Zero-Lag Word Clicks
-        setupEventDelegation();
-
-        const downloadedBooks = await IDB.getMeta('downloaded_books');
-        if (downloadedBooks) {
-          try { allBooks = JSON.parse(downloadedBooks); } catch(e) {}
-        }
+        await loadPreferencesFromIDB();
 
         const cachedBooks = localStorage.getItem('library_books');
         if (cachedBooks) {
-          allBooks = JSON.parse(cachedBooks);
-          for (const book of allBooks) {
-            const data = await IDB.get(book.id);
-            if (data && data.length > 0) book.downloaded = true;
-          }
-          renderBooks(allBooks);
-          updateContinueReading();
-        }
-
-        const savedUrl = localStorage.getItem('supabase_url') || window.ENV_SUPABASE_URL;
-        const savedKey = localStorage.getItem('supabase_key') || window.ENV_SUPABASE_KEY;
-
-        if (savedUrl && savedKey && window.supabase) {
           try {
-            supabaseClient = window.supabase.createClient(savedUrl, savedKey);
-            document.getElementById('supabaseUrl').value = savedUrl;
-            document.getElementById('supabaseKey').value = savedKey;
+            allBooks = JSON.parse(cachedBooks);
+            for (const book of allBooks) {
+              const data = await IDB.get(book.id);
+              if (data && data.length > 0) {
+                book.downloaded = true;
+              }
+            }
+            renderBooks(allBooks);
+            updateContinueReading();
+            updateStorageInfo();
           } catch(e) {}
         }
 
-        document.getElementById('setupBox').style.display = 'none';
-        document.getElementById('loader').classList.add('hidden');
-        document.getElementById('homeView').classList.add('show');
+        const savedUrl = localStorage.getItem('supabase_url');
+        const savedKey = localStorage.getItem('supabase_key');
 
-        if (navigator.onLine && supabaseClient) {
-          loadBooks(true);
+        if (window.ENV_SUPABASE_URL && window.ENV_SUPABASE_KEY) {
+          document.getElementById('supabaseUrl').value = window.ENV_SUPABASE_URL;
+          document.getElementById('supabaseKey').value = window.ENV_SUPABASE_KEY;
+          useConfigCredentials();
+          return;
         }
+
+        if (savedUrl && savedKey) {
+          document.getElementById('supabaseUrl').value = savedUrl;
+          document.getElementById('supabaseKey').value = savedKey;
+          supabaseClient = window.supabase.createClient(savedUrl, savedKey);
+          document.getElementById('setupBox').style.display = 'none';
+          document.getElementById('loader').classList.add('hidden');
+          document.getElementById('homeView').classList.add('show');
+          await loadBooks();
+          return;
+        }
+
+        document.getElementById('setupBox').classList.add('show');
+        document.getElementById('loadStatus').textContent = '🔌 Connect to Supabase';
+        document.getElementById('loadSubStatus').textContent = 'Enter your Supabase credentials';
       } catch (err) {
         console.error('Init error:', err);
         document.getElementById('setupBox').classList.add('show');
@@ -1413,7 +1563,6 @@
       msg.innerHTML = '<div class="status-msg info">⏳ Connecting...</div>';
 
       try {
-        if (!window.supabase) throw new Error("Supabase library not ready");
         supabaseClient = window.supabase.createClient(url, key);
         localStorage.setItem('supabase_url', url);
         localStorage.setItem('supabase_key', key);
@@ -1423,53 +1572,80 @@
       }
     }
 
-    async function testConnection(silent = false) {
+    function useConfigCredentials() {
+      const msg = document.getElementById('statusMsg');
+      msg.innerHTML = '<div class="status-msg info">⏳ Using config.js...</div>';
+      supabaseClient = window.supabase.createClient(
+        window.ENV_SUPABASE_URL,
+        window.ENV_SUPABASE_KEY
+      );
+      document.getElementById('supabaseUrl').value = window.ENV_SUPABASE_URL;
+      document.getElementById('supabaseKey').value = window.ENV_SUPABASE_KEY;
+      localStorage.setItem('supabase_url', window.ENV_SUPABASE_URL);
+      localStorage.setItem('supabase_key', window.ENV_SUPABASE_KEY);
+      testConnection();
+    }
+
+    async function testConnection() {
       const msg = document.getElementById('statusMsg');
       try {
-        if (!supabaseClient) return;
-        const { data, error } = await supabaseClient.from('master_catalog').select('*').limit(1);
-        if (error) throw error;
+        const { data, error } = await supabaseClient
+          .from('master_catalog')
+          .select('*')
+          .limit(1);
 
-        localStorage.setItem('supabase_connected', 'true');
-
-        if (!silent) {
-          if (msg) msg.innerHTML = '<div class="status-msg success">✅ Connected!</div>';
-          document.getElementById('setupBox').style.display = 'none';
-          document.getElementById('loader').classList.add('hidden');
-          document.getElementById('homeView').classList.add('show');
-          await loadBooks();
+        if (error) {
+          msg.innerHTML = `<div class="status-msg error">❌ ${error.message}</div>`;
+          return;
         }
+
+        msg.innerHTML = '<div class="status-msg success">✅ Connected!</div>';
+        document.getElementById('setupBox').style.display = 'none';
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('homeView').classList.add('show');
+        document.getElementById('loadSubStatus').textContent = 'Ready!';
+        await loadBooks();
       } catch(err) {
-        if (!silent && msg) msg.innerHTML = `<div class="status-msg error">❌ ${err.message}</div>`;
+        msg.innerHTML = `<div class="status-msg error">❌ ${err.message}</div>`;
       }
     }
 
     // ================================================================
-    // LOAD BOOKS & RENDER
+    // LOAD BOOKS
     // ================================================================
-    async function loadBooks(silent = false) {
-      if (!silent) showLoading('📚 പുസ്തകങ്ങൾ ലോഡ് ചെയ്യുന്നു...');
+    async function loadBooks() {
+      showLoading('📚 പുസ്തകങ്ങൾ ലോഡ് ചെയ്യുന്നു...');
       try {
-        if (!supabaseClient) throw new Error("Offline");
-        const { data, error } = await supabaseClient.from('master_catalog').select('*').order('title_ml', { ascending: true });
+        const { data, error } = await supabaseClient
+          .from('master_catalog')
+          .select('*')
+          .order('title_ml', { ascending: true });
+
         if (error) throw error;
 
         allBooks = data || [];
 
-        for (const book of allBooks) {
-          const idbData = await IDB.get(book.id);
-          if (idbData && idbData.length > 0) book.downloaded = true;
-        }
+        const downloadPromises = allBooks.map(book => IDB.get(book.id));
+        const results = await Promise.all(downloadPromises);
+        allBooks.forEach((book, i) => {
+          if (results[i] && results[i].length > 0) {
+            book.downloaded = true;
+          }
+        });
 
         localStorage.setItem('library_books', JSON.stringify(allBooks));
         renderBooks(allBooks);
         updateContinueReading();
         updateStorageInfo();
-        if (!silent) hideLoading();
+        hideLoading();
       } catch(err) {
-        if (!silent) hideLoading();
-        const cached = localStorage.getItem('library_books');
-        if (cached) renderBooks(JSON.parse(cached));
+        hideLoading();
+        if (allBooks.length > 0) {
+          renderBooks(allBooks);
+        } else {
+          document.getElementById('bookGrid').innerHTML = 
+            `<div style="grid-column:1/-1;text-align:center;padding:40px;color:#dc3545;">❌ Error: ${err.message}</div>`;
+        }
       }
     }
 
@@ -1508,7 +1684,8 @@
 
       if (type === 'all') renderBooks(allBooks);
       else if (type === 'downloaded') {
-        renderBooks(allBooks.filter(b => b.downloaded));
+        const downloaded = allBooks.filter(b => b.downloaded);
+        renderBooks(downloaded);
       }
     }
 
@@ -1525,13 +1702,13 @@
     function toggleSearch() { document.getElementById('searchBar').classList.toggle('show'); }
 
     async function syncBooks() {
-      if (!supabaseClient) { alert("ഓൺലൈൻ കണക്ഷൻ ലഭ്യമല്ല!"); return; }
+      if (!supabaseClient) return;
       await loadBooks();
       alert('✅ Books synced!');
     }
 
     // ================================================================
-    // OPEN BOOK & DOWNLOAD
+    // OPEN BOOK
     // ================================================================
     async function openBook(bookId) {
       currentBookId = bookId;
@@ -1550,12 +1727,6 @@
           currentPages = idbData;
           totalPages = idbData.length;
         } else {
-          if (!supabaseClient) {
-            hideLoading();
-            alert("⚠️ ഈ പുസ്തകം കാണാൻ ഇന്റർനെറ്റ് കണക്ഷൻ ആവശ്യമാണ്!");
-            return;
-          }
-
           const tableName = `${bookId}_contents`;
           const { count, error: countError } = await supabaseClient
             .from(tableName)
@@ -1569,7 +1740,6 @@
             .range(0, 499);
 
           if (error) throw error;
-
           if (!chunk || chunk.length === 0) {
             hideLoading();
             alert('No content found in database table.');
@@ -1577,8 +1747,13 @@
           }
 
           currentPages = chunk.map(item => ({
-            id: item.ID, sequence: item.ID, part: item['Part Number'] || 1, page: item['Page Number'] || 1,
-            Arabic: item['Arabic Text'] || '', Malayalam: item['Malayalam Text'] || '', English: item['English Text'] || ''
+            id: item.ID,
+            sequence: item.ID,
+            part: item['Part Number'] || 1,
+            page: item['Page Number'] || 1,
+            Arabic: item['Arabic Text'] || '',
+            Malayalam: item['Malayalam Text'] || '',
+            English: item['English Text'] || ''
           }));
 
           totalPages = actualTotalPages > 0 ? actualTotalPages : currentPages.length;
@@ -1597,8 +1772,8 @@
 
         hideLoading();
         openReader();
-        renderCurrentPage();
-        buildTOCData(); 
+        renderPages();
+        buildTOCData();
 
       } catch(err) {
         hideLoading();
@@ -1606,9 +1781,14 @@
       }
     }
 
+    // ================================================================
+    // DOWNLOAD BOOK
+    // ================================================================
     async function downloadBookBackground(bookId) {
-      if (isDownloadingInstance) { alert("മറ്റൊരു ഡൗൺലോഡ് നടക്കുന്നുണ്ട്!"); return; }
-      if (!supabaseClient) { alert("ഡൗൺലോഡ് ചെയ്യാൻ ഇൻ്റർനെറ്റ് കണക്ഷൻ വേണം!"); return; }
+      if (isDownloadingInstance) {
+        alert("മറ്റൊരു ഡൗൺലോഡ് നടക്കുന്നുണ്ട്!");
+        return;
+      }
 
       const book = allBooks.find(b => b.id === bookId);
       if (!book) return;
@@ -1625,21 +1805,30 @@
         let totalCount = 0;
 
         try {
-          const { count } = await supabaseClient.from(tableName).select('*', { count: 'exact', head: true });
+          const { count } = await supabaseClient
+            .from(tableName)
+            .select('*', { count: 'exact', head: true });
           totalCount = count || 0;
         } catch(e) {}
 
         while (hasMore) {
           const { data: supabaseData, error } = await supabaseClient
-            .from(tableName).select('*').order('ID', { ascending: true })
+            .from(tableName)
+            .select('*')
+            .order('ID', { ascending: true })
             .range(page * BATCH_SIZE, (page + 1) * BATCH_SIZE - 1);
 
           if (error) throw error;
 
           if (supabaseData && supabaseData.length > 0) {
             const parsed = supabaseData.map(item => ({
-              id: item.ID, sequence: item.ID, part: item['Part Number'] || 1, page: item['Page Number'] || 1,
-              Arabic: item['Arabic Text'] || '', Malayalam: item['Malayalam Text'] || '', English: item['English Text'] || ''
+              id: item.ID,
+              sequence: item.ID,
+              part: item['Part Number'] || 1,
+              page: item['Page Number'] || 1,
+              Arabic: item['Arabic Text'] || '',
+              Malayalam: item['Malayalam Text'] || '',
+              English: item['English Text'] || ''
             }));
 
             allData = allData.concat(parsed);
@@ -1648,7 +1837,7 @@
             if (currentBookId === bookId) {
               currentPages = allData;
               totalPages = totalCount > 0 ? totalCount : allData.length;
-              renderCurrentPage();
+              renderPages();
               buildTOCData();
             }
 
@@ -1682,13 +1871,17 @@
       }
     }
 
+    // ================================================================
+    // READER
+    // ================================================================
     function openReader() {
       document.getElementById('readerView').classList.add('show');
       document.getElementById('homeView').classList.remove('show');
       document.getElementById('miniPlayer').classList.add('show');
       switchView('ebook');
       updateBookmarkUI();
-      applyCaptionStyle();
+      applyCaptionStyle(false);
+      setupScrollListener();
     }
 
     function closeReader() {
@@ -1708,194 +1901,109 @@
       if (!isPlaying) document.getElementById('miniPlayer').classList.remove('show');
       closeVisualMode();
       updateContinueReading();
+      
+      const readerContent = document.getElementById('readerContent');
+      if (readerContent) {
+        readerContent.removeEventListener('scroll', handleScroll);
+      }
     }
 
     // ================================================================
-    // INFINITE SCROLL / INTERSECTION OBSERVER SETUP
+    // RENDER PAGES - VERTICAL SCROLL (All pages continuous)
     // ================================================================
-    function setupIntersectionObserver() {
-      if(pageObserver) pageObserver.disconnect();
-      if(activePageObserver) activePageObserver.disconnect();
-
-      const options = { root: null, rootMargin: '200% 0px', threshold: 0.01 };
-      pageObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if(entry.isIntersecting) {
-            const pageCard = entry.target;
-            const pIdx = parseInt(pageCard.dataset.pageIndex);
-            if(pageCard.dataset.loaded === "false") {
-               renderSpecificPageContent(pIdx, pageCard);
-            }
-          }
-        });
-      }, options);
-
-      activePageObserver = new IntersectionObserver((entries) => {
-         entries.forEach(entry => {
-           if(entry.isIntersecting && entry.intersectionRatio > 0.4) {
-              const newIdx = parseInt(entry.target.dataset.pageIndex);
-              if (currentPageIndex !== newIdx) {
-                  currentPageIndex = newIdx;
-                  updateAudioUI();
-              }
-           }
-         });
-      }, { root: null, rootMargin: '0px', threshold: 0.4 });
-
-      document.querySelectorAll('.reader-page-card').forEach(card => {
-         pageObserver.observe(card);
-         activePageObserver.observe(card);
-      });
-    }
-
-    // ================================================================
-    // EVENT DELEGATION FOR FAST TOUCH (NO MEMORY LEAKS)
-    // ================================================================
-    function setupEventDelegation() {
-      const container = document.getElementById('readerPageContainer');
-      if (!container) return;
-      container.addEventListener('click', (e) => {
-        const token = e.target.closest('.word-token');
-        if (token && touchSpeakEnabled) {
-          const offset = parseInt(token.dataset.offset || '0');
-          const lang = token.dataset.lang || 'ml';
-          const pIdx = parseInt(token.dataset.page || currentPageIndex);
-          seekToWord(offset, lang, pIdx);
-        }
-      });
-    }
-
-    // ================================================================
-    // RENDER PAGE (INFINITE SCROLL OR SINGLE PAGE)
-    // ================================================================
-    function renderCurrentPage() {
+    function renderPages() {
       if (!currentPages || currentPages.length === 0) return;
 
-      const container = document.getElementById('readerPageContainer');
-      const isVertical = document.getElementById('optVerticalScroll')?.checked;
-      const showDividers = STATE.showDividers;
-
-      if (isVertical) {
-        // CONTINUOUS INFINITE SCROLL: Render blank shells for ALL pages
-        let fullHtml = '';
-        for (let idx = 0; idx < totalPages; idx++) {
-          const page = currentPages[idx] || { part: '?', page: idx+1 };
-          
-          if (idx > 0 && showDividers) {
-            fullHtml += `
-              <div class="page-break-divider">
-                <span class="page-break-label">═══ 📄 പേജ് ${page.page || idx+1} ═══</span>
-              </div>
-            `;
-          }
-
-          fullHtml += `
-            <div class="reader-page-card" id="page-card-${idx}" data-page-index="${idx}" data-loaded="false">
-              <div class="head-badge">ഭാഗം ${page.part || '?'} - പേജ് ${page.page || idx+1} (${idx + 1}/${totalPages})</div>
-              <div class="page-content-wrapper" style="min-height:300px; display:flex; justify-content:center; align-items:center;">
-                  <div class="loader-spinner" style="width:30px; height:30px; border-width:3px;"></div>
-              </div>
-            </div>`;
-        }
-        
-        container.innerHTML = fullHtml;
-        setupIntersectionObserver();
-
-        // Scroll gracefully to current saved page
-        setTimeout(() => {
-            const target = document.getElementById(`page-card-${currentPageIndex}`);
-            if(target) target.scrollIntoView({behavior: 'auto', block: 'start'});
-        }, 100);
-
-      } else {
-        // HORIZONTAL SINGLE-PAGE VIEW (Standard)
-        if(pageObserver) pageObserver.disconnect();
-        if(activePageObserver) activePageObserver.disconnect();
-
-        const page = currentPages[currentPageIndex];
-        if (!page) return;
-
-        const ar = page.Arabic || '';
-        const ml = page.Malayalam || '';
-        const en = page.English || '';
-
-        let arHtml = STATE.showAr && ar ? tokenizeText(ar, 'ar', currentPageIndex) : '';
-        let mlHtml = STATE.showMl && ml ? tokenizeText(ml, 'ml', currentPageIndex) : '';
-        let enHtml = STATE.showEn && en ? tokenizeText(en, 'en', currentPageIndex) : '';
-
-        let html = `
-          <div class="reader-page-card" id="page-card-${currentPageIndex}">
-            <div class="head-badge">ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'} (${currentPageIndex + 1}/${totalPages})</div>
-        `;
-        if (arHtml) html += `<div class="ar-content" id="arContent-${currentPageIndex}">${arHtml}</div>`;
-        if (mlHtml) html += `<div class="ml-content" id="mlContent-${currentPageIndex}">${mlHtml}</div>`;
-        if (enHtml) html += `<div class="en-content" id="enContent-${currentPageIndex}">${enHtml}</div>`;
-        html += `</div>`;
-
-        container.innerHTML = html;
-        document.getElementById('readerPageNum').textContent = `${currentPageIndex + 1} / ${totalPages}`;
+      if (renderTimeout) {
+        cancelAnimationFrame(renderTimeout);
+        renderTimeout = null;
       }
 
-      updateAudioUI();
-      if (isVisualMode) updateVisualChunk();
-      if (isPlaying && currentUtterance) highlightCurrentWord();
-    }
+      renderTimeout = requestAnimationFrame(() => {
+        const container = document.getElementById('readerPageContainer');
+        const isVertical = prefs.verticalScroll;
+        const showDividers = prefs.showDividers;
 
-    async function fetchSinglePageOnlineVirtual(targetIndex) {
-        try {
-            if(!supabaseClient) return null;
-            const tableName = `${currentBookId}_contents`;
-            const { data, error } = await supabaseClient.from(tableName).select('*').order('ID', { ascending: true }).range(targetIndex, targetIndex);
-            if (!error && data && data.length > 0) {
-                const item = data[0];
-                const pageObj = {
-                    id: item.ID, sequence: item.ID, part: item['Part Number'] || 1, page: item['Page Number'] || 1,
-                    Arabic: item['Arabic Text'] || '', Malayalam: item['Malayalam Text'] || '', English: item['English Text'] || ''
-                };
-                currentPages[targetIndex] = pageObj;
-                return pageObj;
+        let html = '';
+
+        if (isVertical) {
+          // ✅ ALL PAGES - CONTINUOUS SCROLL
+          const readerContent = document.getElementById('readerContent');
+          const viewportHeight = readerContent.clientHeight || window.innerHeight;
+          const scrollTop = readerContent.scrollTop || 0;
+          
+          // Calculate which pages are visible (Virtual Scrolling)
+          const pageHeight = viewportHeight * 0.7;
+          const startIdx = Math.max(0, Math.floor(scrollTop / pageHeight) - 2);
+          const endIdx = Math.min(currentPages.length, startIdx + 6);
+
+          for (let i = startIdx; i < endIdx && i < currentPages.length; i++) {
+            const page = currentPages[i];
+            if (!page) continue;
+            html += buildPageHTML(page, i);
+            if (showDividers && i < currentPages.length - 1) {
+              html += `<div class="page-divider">═══ 📄 പേജ് ${page.page || i + 1} ═══</div>`;
             }
-        } catch(e) { return null; }
-        return null;
+          }
+        } else {
+          // Horizontal mode: only current page
+          const page = currentPages[currentPageIndex];
+          if (page) {
+            html = buildPageHTML(page, currentPageIndex);
+          }
+        }
+
+        container.innerHTML = html;
+
+        // Update pagination visibility
+        const pagination = document.getElementById('readerPagination');
+        if (isVertical) {
+          pagination.classList.add('hidden');
+        } else {
+          pagination.classList.remove('hidden');
+          document.getElementById('readerPageNum').textContent = 
+            `${currentPageIndex + 1} / ${totalPages}`;
+        }
+
+        // Update mini player
+        const page = currentPages[currentPageIndex];
+        if (page) {
+          const mlText = (page.Malayalam || '').replace(/<[^>]+>/g, '').trim();
+          document.getElementById('miniTitle').textContent = mlText.substring(0, 40) + '...';
+          document.getElementById('miniProgress').textContent = `ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'}`;
+          updateAudioUI();
+        }
+
+        if (isVisualMode) updateVisualChunk();
+        if (isPlaying && currentUtterance) highlightCurrentWord();
+
+        renderTimeout = null;
+      });
     }
 
-    function renderSpecificPageContent(idx, cardElement) {
-       const page = currentPages[idx];
-       if(!page) {
-           fetchSinglePageOnlineVirtual(idx).then(p => injectPageContent(p, idx, cardElement));
-           return;
-       }
-       injectPageContent(page, idx, cardElement);
+    function buildPageHTML(page, index) {
+      const ar = page.Arabic || '';
+      const ml = page.Malayalam || '';
+      const en = page.English || '';
+      const part = page.part || '?';
+      const pageNum = page.page || '?';
+
+      let arHtml = prefs.showAr && ar ? tokenizeText(ar, 'ar') : '';
+      let mlHtml = prefs.showMl && ml ? tokenizeText(ml, 'ml') : '';
+      let enHtml = prefs.showEn && en ? tokenizeText(en, 'en') : '';
+
+      let html = `
+        <div class="reader-page-card" data-page-index="${index}">
+          <div class="head-badge">ഭാഗം ${part} - പേജ് ${pageNum} (${index + 1}/${totalPages})</div>
+      `;
+      if (arHtml) html += `<div class="ar-content" id="arContent_${index}">${arHtml}</div>`;
+      if (mlHtml) html += `<div class="ml-content" id="mlContent_${index}">${mlHtml}</div>`;
+      if (enHtml) html += `<div class="en-content" id="enContent_${index}">${enHtml}</div>`;
+      html += `</div>`;
+      return html;
     }
 
-    function injectPageContent(page, idx, cardElement) {
-       if(!page) return;
-       const ar = page.Arabic || '';
-       const ml = page.Malayalam || '';
-       const en = page.English || '';
-
-       let arHtml = STATE.showAr && ar ? tokenizeText(ar, 'ar', idx) : '';
-       let mlHtml = STATE.showMl && ml ? tokenizeText(ml, 'ml', idx) : '';
-       let enHtml = STATE.showEn && en ? tokenizeText(en, 'en', idx) : '';
-
-       let contentHtml = '';
-       if (arHtml) contentHtml += `<div class="ar-content" id="arContent-${idx}">${arHtml}</div>`;
-       if (mlHtml) contentHtml += `<div class="ml-content" id="mlContent-${idx}">${mlHtml}</div>`;
-       if (enHtml) contentHtml += `<div class="en-content" id="enContent-${idx}">${enHtml}</div>`;
-
-       const wrapper = cardElement.querySelector('.page-content-wrapper');
-       if(wrapper) {
-           wrapper.style.display = 'block';
-           wrapper.style.minHeight = 'auto';
-           wrapper.innerHTML = contentHtml;
-       }
-       cardElement.dataset.loaded = "true";
-       
-       if(isPlaying && currentPageIndex === idx) highlightCurrentWord();
-    }
-
-    // LIGHTWEIGHT TOKENIZER
-    function tokenizeText(text, lang, pIdx = 0) {
+    function tokenizeText(text, lang) {
       if (!text) return '';
       const pureText = text.replace(/<[^>]+>/g, '').trim();
       if (!pureText) return text;
@@ -1904,17 +2012,89 @@
       let offset = 0;
 
       return tokens.map(token => {
-        if (token.trim() === '') { offset += token.length; return token; }
+        if (token.trim() === '') {
+          offset += token.length;
+          return token;
+        }
         const startOffset = offset;
         offset += token.length;
-        const isHighlighted = isPlaying && currentPageIndex === pIdx && currentWordOffset >= startOffset && currentWordOffset < startOffset + token.length && spokenLang === lang;
+        const isHighlighted = isPlaying && 
+                             currentWordOffset >= startOffset && 
+                             currentWordOffset < startOffset + token.length &&
+                             spokenLang === lang;
         const hlClass = isHighlighted ? `word-hl word-hl-${lang}` : '';
-        return `<span class="word-token ${hlClass}" data-lang="${lang}" data-page="${pIdx}" data-offset="${startOffset}">${token}</span>`;
+        const onclickAttr = prefs.tapToTTS ? `onclick="seekToWord(${startOffset}, '${lang}')"` : '';
+        return `<span class="word-token ${hlClass}" data-lang="${lang}" data-offset="${startOffset}" ${onclickAttr}>${token}</span>`;
       }).join('');
     }
 
-    function seekToWord(offset, lang, pIdx = currentPageIndex) {
-      currentPageIndex = pIdx;
+    // ================================================================
+    // SCROLL LISTENER - Detect current page
+    // ================================================================
+    function setupScrollListener() {
+      const readerContent = document.getElementById('readerContent');
+      if (!readerContent) return;
+      readerContent.removeEventListener('scroll', handleScroll);
+      readerContent.addEventListener('scroll', handleScroll, { passive: true });
+    }
+
+    function handleScroll() {
+      if (!prefs.verticalScroll) return;
+      
+      if (scrollTimeout) {
+        cancelAnimationFrame(scrollTimeout);
+        scrollTimeout = null;
+      }
+
+      scrollTimeout = requestAnimationFrame(() => {
+        const readerContent = document.getElementById('readerContent');
+        if (!readerContent) return;
+
+        const pageCards = document.querySelectorAll('.reader-page-card');
+        if (pageCards.length === 0) return;
+
+        let visibleIndex = currentPageIndex;
+        let minDistance = Infinity;
+
+        const viewportHeight = readerContent.clientHeight || window.innerHeight;
+        const scrollTop = readerContent.scrollTop || 0;
+        const viewportCenter = scrollTop + viewportHeight / 2;
+
+        for (const card of pageCards) {
+          const rect = card.getBoundingClientRect();
+          const cardCenter = rect.top + rect.height / 2;
+          const distance = Math.abs(cardCenter - viewportCenter);
+          
+          if (distance < minDistance) {
+            minDistance = distance;
+            const index = parseInt(card.dataset.pageIndex);
+            if (!isNaN(index)) {
+              visibleIndex = index;
+            }
+          }
+        }
+
+        if (visibleIndex !== currentPageIndex && visibleIndex >= 0 && visibleIndex < totalPages) {
+          currentPageIndex = visibleIndex;
+          const page = currentPages[currentPageIndex];
+          if (page) {
+            const mlText = (page.Malayalam || '').replace(/<[^>]+>/g, '').trim();
+            document.getElementById('miniTitle').textContent = mlText.substring(0, 40) + '...';
+            document.getElementById('miniProgress').textContent = `ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'}`;
+            updateAudioUI();
+            saveProgress();
+          }
+        }
+
+        scrollTimeout = null;
+      });
+    }
+
+    // ================================================================
+    // SEEK TO WORD
+    // ================================================================
+    function seekToWord(offset, lang) {
+      if (!prefs.tapToTTS) return;
       currentWordOffset = offset;
       spokenLang = lang;
       if (isPlaying) {
@@ -1922,7 +2102,9 @@
           highlightCurrentWord();
           if (isVisualMode) updateVisualChunk();
         }
-      } else { togglePlay(); }
+      } else {
+        togglePlay();
+      }
     }
 
     function highlightCurrentWord() {
@@ -1933,20 +2115,30 @@
       });
 
       const langMap = { 'ar': 'arContent', 'ml': 'mlContent', 'en': 'enContent' };
-      const baseId = langMap[spokenLang];
-      if (!baseId) return;
+      const contentId = langMap[spokenLang];
+      if (!contentId) return;
 
-      const contentId = `${baseId}-${currentPageIndex}`; 
-      let container = document.getElementById(contentId);
-      if (!container) container = document.getElementById(baseId);
+      let container;
+      if (prefs.verticalScroll) {
+        const pageCard = document.querySelector(`.reader-page-card[data-page-index="${currentPageIndex}"]`);
+        if (pageCard) {
+          container = pageCard.querySelector(`.${contentId}`);
+        }
+      } else {
+        container = document.getElementById(contentId);
+      }
       if (!container) return;
 
       const tokens = container.querySelectorAll('.word-token');
       let targetToken = null;
+      let targetOffset = -1;
 
       for (const token of tokens) {
-        const offset = parseInt(token.dataset.offset || '0');
-        if (offset <= currentWordOffset) targetToken = token;
+        const offset = parseInt(token.dataset.offset);
+        if (offset <= currentWordOffset && offset > targetOffset) {
+          targetOffset = offset;
+          targetToken = token;
+        }
       }
 
       if (targetToken) {
@@ -1957,44 +2149,703 @@
       }
     }
 
+    function autoScrollToHighlight() {
+      const highlighted = document.querySelector('.word-hl');
+      if (highlighted) {
+        highlighted.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
     function updateAutoScroll() {
       autoScrollEnabled = document.getElementById('optAutoScroll').checked;
-      saveGeneralSetting('pref_auto_scroll', autoScrollEnabled);
     }
 
-    function updateTouchSpeak() {
-      touchSpeakEnabled = document.getElementById('optTouchSpeak').checked;
-      saveGeneralSetting('pref_touch_speak', touchSpeakEnabled);
-    }
-
-    function updateDividers() {
-      STATE.showDividers = document.getElementById('optShowDividers').checked;
-      saveGeneralSetting('pref_show_dividers', STATE.showDividers);
-      if(document.getElementById('optVerticalScroll').checked) renderCurrentPage();
-    }
-
-    function updateScrollDirection() {
+    // ================================================================
+    // SCROLL DIRECTION
+    // ================================================================
+    function updateScrollDirection(save = true) {
       const isVertical = document.getElementById('optVerticalScroll').checked;
+      if (save) {
+        prefs.verticalScroll = isVertical;
+        savePreferencesToIDB();
+      }
       const readerView = document.getElementById('readerView');
 
       if (isVertical) {
         readerView.classList.remove('scroll-mode-horizontal');
         readerView.classList.add('scroll-mode-vertical');
-        saveGeneralSetting('pref_scroll_vertical', true);
       } else {
         readerView.classList.remove('scroll-mode-vertical');
         readerView.classList.add('scroll-mode-horizontal');
-        saveGeneralSetting('pref_scroll_vertical', false);
       }
-      renderCurrentPage();
+
+      if (currentPages.length) {
+        renderPages();
+        if (isVertical) {
+          setTimeout(() => {
+            const pageCard = document.querySelector(`.reader-page-card[data-page-index="${currentPageIndex}"]`);
+            if (pageCard) {
+              pageCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 100);
+        }
+      }
     }
 
     // ================================================================
-    // VISUAL MODE WITH 10 STYLES
+    // NAVIGATION
     // ================================================================
-    function applyCaptionStyle() {
+    function nextPage() {
+      if (currentPageIndex < totalPages - 1) {
+        currentPageIndex++;
+        currentWordOffset = 0;
+        if (!currentPages[currentPageIndex]) {
+          fetchSinglePageOnline(currentPageIndex);
+        } else {
+          if (prefs.verticalScroll) {
+            const pageCard = document.querySelector(`.reader-page-card[data-page-index="${currentPageIndex}"]`);
+            if (pageCard) {
+              pageCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            renderPages();
+          } else {
+            renderPages();
+          }
+          if (isPlaying) playAudio();
+          saveProgress();
+        }
+      }
+    }
+
+    function prevPage() {
+      if (currentPageIndex > 0) {
+        currentPageIndex--;
+        currentWordOffset = 0;
+        if (prefs.verticalScroll) {
+          const pageCard = document.querySelector(`.reader-page-card[data-page-index="${currentPageIndex}"]`);
+          if (pageCard) {
+            pageCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+          renderPages();
+        } else {
+          renderPages();
+        }
+        if (isPlaying) playAudio();
+        saveProgress();
+      }
+    }
+
+    async function fetchSinglePageOnline(targetIndex) {
+      showLoading('📖 Loading page online...');
+      try {
+        const tableName = `${currentBookId}_contents`;
+        const { data, error } = await supabaseClient
+          .from(tableName)
+          .select('*')
+          .order('ID', { ascending: true })
+          .range(targetIndex, targetIndex);
+
+        if (!error && data && data.length > 0) {
+          const item = data[0];
+          currentPages[targetIndex] = {
+            id: item.ID,
+            sequence: item.ID,
+            part: item['Part Number'] || 1,
+            page: item['Page Number'] || 1,
+            Arabic: item['Arabic Text'] || '',
+            Malayalam: item['Malayalam Text'] || '',
+            English: item['English Text'] || ''
+          };
+          hideLoading();
+          renderPages();
+          if (isPlaying) playAudio();
+          saveProgress();
+        } else {
+          hideLoading();
+        }
+      } catch(e) {
+        hideLoading();
+      }
+    }
+
+    function jumpToPage(index) {
+      if (index >= 0 && index < totalPages) {
+        currentPageIndex = index;
+        currentWordOffset = 0;
+        if (!currentPages[currentPageIndex]) {
+          fetchSinglePageOnline(currentPageIndex);
+        } else {
+          renderPages();
+          if (prefs.verticalScroll) {
+            const pageCard = document.querySelector(`.reader-page-card[data-page-index="${currentPageIndex}"]`);
+            if (pageCard) {
+              pageCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }
+          if (isPlaying) playAudio();
+          saveProgress();
+        }
+      }
+    }
+
+    function saveProgress() {
+      if (currentBookId && currentPages.length > 0) {
+        const chunk = currentPages[currentPageIndex];
+        if (chunk) {
+          localStorage.setItem(`progress_${currentBookId}`, JSON.stringify({
+            sequence: chunk.sequence,
+            offset: currentWordOffset
+          }));
+        }
+      }
+    }
+
+    // ================================================================
+    // CONTINUE READING
+    // ================================================================
+    function updateContinueReading() {
+      const card = document.getElementById('continueCard');
+      const info = document.getElementById('continueInfo');
+      const bookId = localStorage.getItem('last_played_book_id');
+      const title = localStorage.getItem('last_played_book_title');
+
+      if (bookId && title) {
+        card.style.display = 'flex';
+        info.textContent = `${title}`;
+      } else {
+        card.style.display = 'none';
+      }
+    }
+
+    function continueReading() {
+      const bookId = localStorage.getItem('last_played_book_id');
+      if (bookId) openBook(bookId);
+    }
+
+    // ================================================================
+    // TTS ENGINE
+    // ================================================================
+    function setupVoices() {
+      allVoices = synth.getVoices();
+      const select = document.getElementById('optVoice');
+      if (!select) return;
+      const lang = document.getElementById('optAudioLang').value;
+      const filtered = allVoices.filter(v => v.lang.includes(lang.split('-')[0]));
+      select.innerHTML = '';
+      (filtered.length ? filtered : allVoices).forEach(v => {
+        select.appendChild(new Option(`${v.name} (${v.lang})`, v.name));
+      });
+    }
+
+    function togglePlay() {
+      initAudioContext();
+      if (isPlaying) {
+        isVoiceChanging = true;
+        synth.cancel();
+        isPlaying = false;
+        updatePlayIcon();
+        document.getElementById('silentAudio').pause();
+        if (audioProgressInterval) clearInterval(audioProgressInterval);
+        setTimeout(() => { isVoiceChanging = false; }, 100);
+      } else {
+        isPlaying = true;
+        updatePlayIcon();
+        document.getElementById('silentAudio').play().catch(()=>{});
+        requestWakeLock();
+        playAudio();
+      }
+    }
+
+    function playAudio() {
+      const page = currentPages[currentPageIndex];
+      if (!page) return;
+
+      const lang = document.getElementById('optAudioLang').value;
+      let text = '';
+      let langKey = 'ml';
+
+      if (lang === 'ar-EG') {
+        text = page.Arabic || '';
+        langKey = 'ar';
+      } else if (lang === 'en-US') {
+        text = page.English || '';
+        langKey = 'en';
+      } else {
+        text = page.Malayalam || '';
+        langKey = 'ml';
+      }
+
+      text = text.replace(/<[^>]+>/g, '').trim();
+      if (!text) {
+        if (currentPageIndex < totalPages - 1) {
+          nextPage();
+        } else {
+          stopAudio();
+        }
+        return;
+      }
+
+      spokenLang = langKey;
+      document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('lang-' + langKey).classList.add('active');
+
+      let startText = text;
+      if (currentWordOffset > 0 && currentWordOffset < text.length) {
+        startText = text.substring(currentWordOffset);
+      } else {
+        currentWordOffset = 0;
+      }
+
+      if (!startText.trim()) {
+        if (currentPageIndex < totalPages - 1) {
+          currentWordOffset = 0;
+          nextPage();
+        } else {
+          stopAudio();
+        }
+        return;
+      }
+
+      synth.cancel();
+      const startOffset = currentWordOffset;
+
+      currentUtterance = new SpeechSynthesisUtterance(startText);
+      currentUtterance.lang = lang;
+      const voiceName = document.getElementById('optVoice').value;
+      if (voiceName) {
+        const voice = allVoices.find(v => v.name === voiceName);
+        if (voice) currentUtterance.voice = voice;
+      }
+      currentUtterance.rate = parseFloat(document.getElementById('optSpeed').value) || 1.0;
+
+      if (audioProgressInterval) clearInterval(audioProgressInterval);
+      let progress = 0;
+      audioProgressInterval = setInterval(() => {
+        progress += 0.5;
+        if (progress > 100) progress = 0;
+        if (STATE.mode === 'audio') {
+          document.getElementById('audioProgressBar').style.width = progress + '%';
+        }
+        document.getElementById('visProgressBar').style.width = progress + '%';
+      }, 100);
+
+      currentUtterance.onboundary = (e) => {
+        if (e.name === 'word' && typeof e.charIndex === 'number') {
+          const newOffset = startOffset + e.charIndex;
+          if (newOffset > currentWordOffset && newOffset < startOffset + startText.length) {
+            currentWordOffset = newOffset;
+            if (isVisualMode) {
+              updateVisualChunk();
+            } else {
+              highlightCurrentWord();
+            }
+            saveProgress();
+          }
+        }
+      };
+
+      currentUtterance.onstart = () => {
+        document.getElementById('silentAudio').play().catch(()=>{});
+        initAudioContext();
+        if (isVisualMode) {
+          updateVisualChunk();
+        } else {
+          highlightCurrentWord();
+        }
+        localStorage.setItem('last_played_book_id', currentBookId);
+        const book = allBooks.find(b => b.id === currentBookId);
+        localStorage.setItem('last_played_book_title', book?.title_ml || book?.title_ar || 'Book');
+      };
+
+      currentUtterance.onend = () => {
+        if (isPlaying && !isVoiceChanging) {
+          const autoNext = document.getElementById('optAutoNext')?.checked !== false;
+          if (autoNext && currentPageIndex < totalPages - 1) {
+            currentWordOffset = 0;
+            nextPage();
+          } else {
+            stopAudio();
+          }
+        }
+      };
+
+      currentUtterance.onerror = (e) => {
+        if (e.error !== 'canceled' && isPlaying && !isVoiceChanging) {
+          if (currentPageIndex < totalPages - 1) {
+            currentWordOffset = 0;
+            nextPage();
+          } else {
+            stopAudio();
+          }
+        }
+      };
+
+      synth.speak(currentUtterance);
+    }
+
+    function stopAudio() {
+      isVoiceChanging = true;
+      synth.cancel();
+      isPlaying = false;
+      currentUtterance = null;
+      updatePlayIcon();
+      if (audioProgressInterval) clearInterval(audioProgressInterval);
+      document.getElementById('audioProgressBar').style.width = '0%';
+      document.getElementById('visProgressBar').style.width = '0%';
+      document.getElementById('silentAudio').pause();
+      if (wakeLock) {
+        wakeLock.release().catch(()=>{});
+        wakeLock = null;
+      }
+      document.querySelectorAll('.word-hl, .word-hl-ar, .word-hl-ml, .word-hl-en').forEach(el => {
+        el.classList.remove('word-hl', 'word-hl-ar', 'word-hl-ml', 'word-hl-en');
+      });
+      setTimeout(() => { isVoiceChanging = false; }, 100);
+    }
+
+    function updatePlayIcon() {
+      const icon = isPlaying ? 'fa-pause' : 'fa-play';
+      document.getElementById('miniPlayIcon').className = `fas ${icon}`;
+      document.getElementById('audioPlayBtn').className = `fas ${icon} play-big`;
+      document.getElementById('visPlayBtn').className = `fas ${icon} vis-play`;
+    }
+
+    function applyAudioSettings(restart) {
+      if (restart && isPlaying) {
+        isVoiceChanging = true;
+        synth.cancel();
+        setTimeout(() => {
+          isVoiceChanging = false;
+          playAudio();
+        }, 200);
+      }
+    }
+
+    function updateAudioUI() {
+      const page = currentPages[currentPageIndex];
+      if (!page) return;
+      const mlText = (page.Malayalam || '').replace(/<[^>]+>/g, '').trim();
+      document.getElementById('audioTitle').textContent = mlText.substring(0, 50) + '...';
+      document.getElementById('audioMeta').textContent = 
+        `ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'} / ${totalPages}`;
+    }
+
+    function setSpokenLang(lang) {
+      spokenLang = lang;
+      document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById('lang-' + lang).classList.add('active');
+      prefs.spokenLang = lang;
+      savePreferencesToIDB();
+
+      const langMap = { 'ar': 'ar-EG', 'ml': 'ml-IN', 'en': 'en-US' };
+      document.getElementById('optAudioLang').value = langMap[lang];
+      setupVoices();
+
+      if (isPlaying) {
+        isVoiceChanging = true;
+        synth.cancel();
+        setTimeout(() => {
+          isVoiceChanging = false;
+          playAudio();
+        }, 200);
+      }
+
+      if (isVisualMode) {
+        updateVisualChunk();
+      } else {
+        highlightCurrentWord();
+      }
+    }
+
+    // ================================================================
+    // VIEW SWITCH
+    // ================================================================
+    let STATE = { mode: 'ebook' };
+
+    function switchView(mode) {
+      STATE.mode = mode;
+      document.getElementById('ebookView').style.display = mode === 'ebook' ? 'block' : 'none';
+      document.getElementById('audioView').style.display = mode === 'audio' ? 'block' : 'none';
+      document.getElementById('visualView').style.display = mode === 'visual' ? 'block' : 'none';
+
+      document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
+      const tab = document.getElementById('nav-' + mode);
+      if (tab) tab.classList.add('active');
+
+      if (mode === 'visual') {
+        openVisualMode();
+      } else {
+        closeVisualMode();
+        if (isPlaying) {
+          highlightCurrentWord();
+        }
+      }
+    }
+
+    // ================================================================
+    // BOOKMARKS
+    // ================================================================
+    function toggleBookmark() {
+      if (!currentBookId || !currentPages.length) return;
+      const chunk = currentPages[currentPageIndex];
+      if (!chunk) return;
+
+      const key = `bookmarks_${currentBookId}`;
+      let bookmarks = JSON.parse(localStorage.getItem(key) || '[]');
+      const exists = bookmarks.find(b => b.sequence === chunk.sequence);
+
+      if (exists) {
+        bookmarks = bookmarks.filter(b => b.sequence !== chunk.sequence);
+      } else {
+        bookmarks.push({ sequence: chunk.sequence, part: chunk.part, page: chunk.page });
+      }
+
+      localStorage.setItem(key, JSON.stringify(bookmarks));
+      updateBookmarkUI();
+    }
+
+    function updateBookmarkUI() {
+      if (!currentBookId || !currentPages.length) return;
+      const chunk = currentPages[currentPageIndex];
+      if (!chunk) return;
+
+      const key = `bookmarks_${currentBookId}`;
+      const bookmarks = JSON.parse(localStorage.getItem(key) || '[]');
+      const exists = bookmarks.find(b => b.sequence === chunk.sequence);
+      document.getElementById('readerBookmark').classList.toggle('active-bm', !!exists);
+    }
+
+    // ================================================================
+    // TOC
+    // ================================================================
+    function buildTOCData() {
+      if (!currentPages || currentPages.length === 0) return;
+
+      tocTree = [];
+      let currentPart = null;
+      let currentH1 = null;
+      let currentH2 = null;
+      let currentH3 = null;
+
+      for (let index = 0; index < currentPages.length; index++) {
+        const page = currentPages[index];
+        if (!page) continue;
+        const arText = page.Arabic || '';
+        const mlText = (page.Malayalam || '').replace(/<[^>]+>/g, '').trim().substring(0, 30);
+
+        const partName = page.part || "1";
+        if (!currentPart || currentPart.name !== partName) {
+          currentPart = { type: 'part', name: partName, title: `ഭാഗം ${partName}`, children: [], index: index, page: page.page };
+          tocTree.push(currentPart);
+          currentH1 = null;
+          currentH2 = null;
+          currentH3 = null;
+        }
+
+        const h1Match = arText.match(/<h1[^>]*>(.*?)<\/h1>/i);
+        const h2Match = arText.match(/<h2[^>]*>(.*?)<\/h2>/i);
+        const h3Match = arText.match(/<h3[^>]*>(.*?)<\/h3>/i);
+        const h4Match = arText.match(/<h4[^>]*>(.*?)<\/h4>/i);
+
+        if (h1Match) {
+          const title = h1Match[1].replace(/<[^>]+>/g, '').trim();
+          currentH1 = { type: 'h1', title: title, subtitle: mlText, children: [], index: index, page: page.page };
+          currentPart.children.push(currentH1);
+          currentH2 = null;
+          currentH3 = null;
+        } else if (h2Match) {
+          const title = h2Match[1].replace(/<[^>]+>/g, '').trim();
+          currentH2 = { type: 'h2', title: title, subtitle: mlText, children: [], index: index, page: page.page };
+          if (currentH1) currentH1.children.push(currentH2);
+          else currentPart.children.push(currentH2);
+          currentH3 = null;
+        } else if (h3Match) {
+          const title = h3Match[1].replace(/<[^>]+>/g, '').trim();
+          currentH3 = { type: 'h3', title: title, subtitle: mlText, children: [], index: index, page: page.page };
+          if (currentH2) currentH2.children.push(currentH3);
+          else if (currentH1) currentH1.children.push(currentH3);
+          else currentPart.children.push(currentH3);
+        } else if (h4Match) {
+          const title = h4Match[1].replace(/<[^>]+>/g, '').trim();
+          const node = { type: 'h4', title: title, subtitle: mlText, children: [], index: index, page: page.page };
+          if (currentH3) currentH3.children.push(node);
+          else if (currentH2) currentH2.children.push(node);
+          else if (currentH1) currentH1.children.push(node);
+          else currentPart.children.push(node);
+        } else if (index % 5 === 0 || index === currentPageIndex || index === 0) {
+          const node = { type: 'page', title: `പേജ് ${page.page || index + 1}`, subtitle: mlText.substring(0, 25) + '...', children: [], index: index, page: page.page };
+          if (currentH3) currentH3.children.push(node);
+          else if (currentH2) currentH2.children.push(node);
+          else if (currentH1) currentH1.children.push(node);
+          else currentPart.children.push(node);
+        }
+      }
+    }
+
+    function openTOC() {
+      if (!currentBookId || !currentPages.length) return;
+      buildTOCData();
+
+      const modal = document.getElementById('tocModal');
+      document.getElementById('modalOverlay').classList.add('show');
+      modal.classList.add('show');
+
+      tocPath = [{ title: 'Home', nodes: tocTree }];
+      renderTOCLevel();
+    }
+
+    function renderTOCLevel() {
+      const currentLevel = tocPath[tocPath.length - 1];
+      const breadcrumb = document.getElementById('tocBreadcrumb');
+      if (breadcrumb) {
+        breadcrumb.innerHTML = tocPath.map((p, i) => 
+          `<span onclick="navTOC(${i})">${p.title}</span>`
+        ).join(' <i class="fas fa-angle-right"></i> ');
+      }
+
+      const list = document.getElementById('tocList');
+      let html = `
+        <div class="jump-to-page-container">
+          <input type="number" id="jumpPageInput" min="1" max="${totalPages}" placeholder="Jump to page...">
+          <button onclick="jumpToPageNumber()"><i class="fas fa-arrow-right"></i> Go</button>
+        </div>
+      `;
+
+      if (currentLevel.nodes && currentLevel.nodes.length > 0) {
+        const sortedNodes = [...currentLevel.nodes].sort((a, b) => (a.index || 0) - (b.index || 0));
+
+        sortedNodes.forEach((node, idx) => {
+          const isCurrent = node.index === currentPageIndex;
+          const hasChildren = node.children && node.children.length > 0;
+          const typeIcon = { part: '📚', h1: '📑', h2: '📄', h3: '🔹', h4: '🔸', page: '📌' }[node.type] || '📄';
+
+          html += `
+            <div class="toc-item ${isCurrent ? 'current' : ''}">
+              <div class="toc-item-row">
+                <div class="toc-clickable-area" onclick="jumpToPage(${node.index}); closeModal();">
+                  <div class="toc-badge">${typeIcon} ${node.type.toUpperCase()} ${node.page ? '- പേജ് ' + node.page : ''}</div>
+                  <div class="toc-title-text" dir="rtl">${node.title}</div>
+                  ${node.subtitle ? `<div class="toc-translations">${node.subtitle}</div>` : ''}
+                  ${isCurrent ? '<div style="font-size:10px;color:var(--primary-green);margin-top:4px;">📍 Current</div>' : ''}
+                </div>
+                ${hasChildren ? `
+                  <div class="toc-toggle-btn" onclick="drillTOC(${idx})">
+                    <i class="fas fa-chevron-right" style="font-size:16px;"></i>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        html = '<div style="padding:20px;text-align:center;color:var(--text-muted);">📭 No content available</div>';
+      }
+
+      list.innerHTML = html;
+    }
+
+    function drillTOC(idx) {
+      const currentLevel = tocPath[tocPath.length - 1];
+      const node = currentLevel.nodes[idx];
+      if (node && node.children && node.children.length > 0) {
+        tocPath.push({ title: node.title.substring(0, 15) + '...', nodes: node.children });
+        renderTOCLevel();
+      }
+    }
+
+    function navTOC(pathIndex) {
+      tocPath = tocPath.slice(0, pathIndex + 1);
+      renderTOCLevel();
+    }
+
+    function jumpToPageNumber() {
+      const input = document.getElementById('jumpPageInput');
+      if (!input) return;
+      const pageNum = parseInt(input.value);
+      if (pageNum > 0 && pageNum <= totalPages) {
+        closeModal();
+        jumpToPage(pageNum - 1);
+      } else {
+        alert(`Please enter a number between 1 and ${totalPages}`);
+      }
+    }
+
+    // ================================================================
+    // SETTINGS
+    // ================================================================
+    function openSettings() {
+      document.getElementById('modalOverlay').classList.add('show');
+      document.getElementById('settingsModal').classList.add('show');
+      updateIDBStatusMsg();
+    }
+
+    function closeModal() {
+      document.getElementById('modalOverlay').classList.remove('show');
+      document.querySelectorAll('.modal-box').forEach(el => el.classList.remove('show'));
+    }
+
+    function goHome() { closeReader(); }
+
+    function setTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      prefs.theme = theme;
+      savePreferencesToIDB();
+    }
+
+    function applyFontSize() {
+      const size = document.getElementById('optFontSize').value;
+      document.documentElement.style.setProperty('--font-scale', size + 'px');
+      prefs.fontSize = parseInt(size);
+      savePreferencesToIDB();
+      renderPages();
+    }
+
+    function applyFonts() {
+      const ml = document.getElementById('optFontMl').value;
+      const ar = document.getElementById('optFontAr').value;
+      const en = document.getElementById('optFontEn').value;
+      document.documentElement.style.setProperty('--font-ml', ml);
+      document.documentElement.style.setProperty('--font-ar', ar);
+      document.documentElement.style.setProperty('--font-en', en);
+      prefs.fontMl = ml;
+      prefs.fontAr = ar;
+      prefs.fontEn = en;
+      savePreferencesToIDB();
+      renderPages();
+    }
+
+    function renderAllViews() {
+      prefs.showAr = document.getElementById('optShowAr').checked;
+      prefs.showMl = document.getElementById('optShowMl').checked;
+      prefs.showEn = document.getElementById('optShowEn').checked;
+      savePreferencesToIDB();
+      renderPages();
+    }
+
+    function handleBgMusic(save = true) {
+      const opt = document.getElementById('optBgMusic').value;
+      const bg = document.getElementById('bgMusic');
+      const rain = document.getElementById('ambRain');
+      const wind = document.getElementById('ambWind');
+      bg.pause(); rain.pause(); wind.pause();
+      if (opt === 'nasheed') { bg.volume = 0.1; bg.play().catch(()=>{}); }
+      else if (opt === 'rain') { rain.volume = 0.1; rain.play().catch(()=>{}); }
+      else if (opt === 'wind') { wind.volume = 0.1; wind.play().catch(()=>{}); }
+      if (save) {
+        prefs.bgMusic = opt;
+        savePreferencesToIDB();
+      }
+    }
+
+    // ================================================================
+    // VISUAL MODE
+    // ================================================================
+    function applyCaptionStyle(save = true) {
       const style = document.getElementById('optCaptionStyle').value;
-      saveGeneralSetting('pref_caption_style', style);
+      if (save) {
+        prefs.captionStyle = style;
+        savePreferencesToIDB();
+      }
       const vm = document.getElementById('visualMode');
       const styles = ['style-karaoke', 'style-wordbyword', 'style-bounce', 'style-popup', 'style-zoom', 
                       'style-hormozi', 'style-mrbeast', 'style-tiktok', 'style-dynamic', 'style-emoji'];
@@ -2006,7 +2857,7 @@
     function openVisualMode() {
       isVisualMode = true;
       document.getElementById('visualMode').classList.add('show');
-      applyCaptionStyle();
+      applyCaptionStyle(false);
       applyVisualBg();
       updateVisualChunk();
       if (!isPlaying) togglePlay();
@@ -2045,12 +2896,15 @@
       let targetIdx = 0;
       for (let i = 0; i < words.length; i++) {
         const wordLen = words[i].length + 1;
-        if (charCount + wordLen <= currentWordOffset) targetIdx = i + 1;
+        if (charCount + wordLen <= currentWordOffset) {
+          targetIdx = i + 1;
+        }
         charCount += wordLen;
       }
       if (targetIdx >= words.length) targetIdx = words.length - 1;
 
       const isActive = spokenLang === lang;
+
       const startIdx = Math.max(0, targetIdx - 2);
       const endIdx = Math.min(words.length, targetIdx + 3);
       const displayWords = words.slice(startIdx, endIdx);
@@ -2073,7 +2927,8 @@
 
     function applyVisualBg() {
       const id = document.getElementById('optYoutubeId').value.trim();
-      saveGeneralSetting('pref_youtube_id', id);
+      prefs.youtubeId = id;
+      savePreferencesToIDB();
       const video = document.getElementById('visualVideo');
       const yt = document.getElementById('visualYoutube');
       const vid = extractYoutubeId(id);
@@ -2092,572 +2947,32 @@
     }
 
     // ================================================================
-    // NAVIGATION (SMART FOR INFINITE SCROLL)
+    // STORAGE INFO & CLEAR
     // ================================================================
-    function nextPage() {
-      if (currentPageIndex < totalPages - 1) {
-        currentPageIndex++;
-        currentWordOffset = 0;
-        
-        const isVertical = document.getElementById('optVerticalScroll')?.checked;
-        if(isVertical) {
-             const nextCard = document.getElementById(`page-card-${currentPageIndex}`);
-             if(nextCard) nextCard.scrollIntoView({behavior: 'smooth', block: 'start'});
-             if (isPlaying) playAudio();
-             saveProgress();
-        } else {
-             if (!currentPages[currentPageIndex]) {
-                 fetchSinglePageOnline(currentPageIndex);
-             } else {
-                 renderCurrentPage();
-                 if (isPlaying) playAudio();
-                 saveProgress();
-             }
-        }
-      }
-    }
-
-    function prevPage() {
-      if (currentPageIndex > 0) {
-        currentPageIndex--;
-        currentWordOffset = 0;
-
-        const isVertical = document.getElementById('optVerticalScroll')?.checked;
-        if(isVertical) {
-             const prevCard = document.getElementById(`page-card-${currentPageIndex}`);
-             if(prevCard) prevCard.scrollIntoView({behavior: 'smooth', block: 'start'});
-             if (isPlaying) playAudio();
-             saveProgress();
-        } else {
-             renderCurrentPage();
-             if (isPlaying) playAudio();
-             saveProgress();
-        }
-      }
-    }
-
-    async function fetchSinglePageOnline(targetIndex) {
-      showLoading('📖 Loading page online...');
-      try {
-        if (!supabaseClient) throw new Error("Offline");
-        const tableName = `${currentBookId}_contents`;
-        const { data, error } = await supabaseClient.from(tableName).select('*').order('ID', { ascending: true }).range(targetIndex, targetIndex);
-
-        if (!error && data && data.length > 0) {
-          const item = data[0];
-          currentPages[targetIndex] = {
-            id: item.ID, sequence: item.ID, part: item['Part Number'] || 1, page: item['Page Number'] || 1,
-            Arabic: item['Arabic Text'] || '', Malayalam: item['Malayalam Text'] || '', English: item['English Text'] || ''
-          };
-          hideLoading();
-          renderCurrentPage();
-          if (isPlaying) playAudio();
-          saveProgress();
-        } else { hideLoading(); }
-      } catch(e) { hideLoading(); }
-    }
-
-    function jumpToPage(index) {
-      if (index >= 0 && index < totalPages) {
-        currentPageIndex = index;
-        currentWordOffset = 0;
-
-        const isVertical = document.getElementById('optVerticalScroll')?.checked;
-        if (isVertical) {
-            const card = document.getElementById(`page-card-${currentPageIndex}`);
-            if(card) card.scrollIntoView({behavior: 'auto', block: 'start'});
-            if (isPlaying) playAudio();
-            saveProgress();
-        } else {
-            if (!currentPages[currentPageIndex]) fetchSinglePageOnline(currentPageIndex);
-            else {
-              renderCurrentPage();
-              if (isPlaying) playAudio();
-              saveProgress();
-            }
-        }
-      }
-    }
-
-    function saveProgress() {
-      if (currentBookId && currentPages.length > 0) {
-        const chunk = currentPages[currentPageIndex];
-        if (chunk) {
-          localStorage.setItem(`progress_${currentBookId}`, JSON.stringify({ sequence: chunk.sequence, offset: currentWordOffset }));
-        }
-      }
-    }
-
-    function updateContinueReading() {
-      const card = document.getElementById('continueCard');
-      const info = document.getElementById('continueInfo');
-      const bookId = localStorage.getItem('last_played_book_id');
-      const title = localStorage.getItem('last_played_book_title');
-
-      if (bookId && title) {
-        card.style.display = 'flex';
-        info.textContent = `${title}`;
-      } else { card.style.display = 'none'; }
-    }
-
-    function continueReading() {
-      const bookId = localStorage.getItem('last_played_book_id');
-      if (bookId) openBook(bookId);
-    }
-
-    // ================================================================
-    // HIGH ACCURACY TTS ENGINE
-    // ================================================================
-    function setupVoices() {
-      allVoices = synth.getVoices();
-      const select = document.getElementById('optVoice');
-      if (!select) return;
-      const lang = document.getElementById('optAudioLang').value;
-      const filtered = allVoices.filter(v => v.lang.includes(lang.split('-')[0]));
-      select.innerHTML = '';
-      (filtered.length ? filtered : allVoices).forEach(v => {
-        select.appendChild(new Option(`${v.name} (${v.lang})`, v.name));
-      });
-      saveGeneralSetting('pref_audio_lang', lang);
-    }
-
-    function togglePlay() {
-      initAudioContext();
-      if (isPlaying) {
-        isVoiceChanging = true;
-        synth.cancel();
-        isPlaying = false;
-        updatePlayIcon();
-        document.getElementById('silentAudio').pause();
-        if (animFrameReq) cancelAnimationFrame(animFrameReq);
-        setTimeout(() => { isVoiceChanging = false; }, 100);
-      } else {
-        isPlaying = true;
-        updatePlayIcon();
-        document.getElementById('silentAudio').play().catch(()=>{});
-        requestWakeLock();
-        playAudio();
-      }
-    }
-
-    function playAudio() {
-      const page = currentPages[currentPageIndex];
-      if (!page) {
-          fetchSinglePageOnlineVirtual(currentPageIndex).then(p => {
-              if(p) { currentPages[currentPageIndex] = p; playAudio(); }
-              else { stopAudio(); }
-          });
-          return;
-      }
-
-      const lang = document.getElementById('optAudioLang').value;
-      let text = '';
-      let langKey = 'ml';
-
-      if (lang === 'ar-EG') { text = page.Arabic || ''; langKey = 'ar'; }
-      else if (lang === 'en-US') { text = page.English || ''; langKey = 'en'; }
-      else { text = page.Malayalam || ''; langKey = 'ml'; }
-
-      text = text.replace(/<[^>]+>/g, '').trim();
-      if (!text) {
-        if (currentPageIndex < totalPages - 1) nextPage();
-        else stopAudio();
-        return;
-      }
-
-      spokenLang = langKey;
-      document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
-      document.getElementById('lang-' + langKey).classList.add('active');
-
-      let startText = text;
-      if (currentWordOffset > 0 && currentWordOffset < text.length) {
-        startText = text.substring(currentWordOffset);
-      } else { currentWordOffset = 0; }
-
-      if (!startText.trim()) {
-        if (currentPageIndex < totalPages - 1) { currentWordOffset = 0; nextPage(); }
-        else stopAudio();
-        return;
-      }
-
-      synth.cancel();
-      const startOffset = currentWordOffset;
-
-      currentUtterance = new SpeechSynthesisUtterance(startText);
-      currentUtterance.lang = lang;
-      const voiceName = document.getElementById('optVoice').value;
-      if (voiceName) {
-        const voice = allVoices.find(v => v.name === voiceName);
-        if (voice) currentUtterance.voice = voice;
-        saveGeneralSetting('pref_voice', voiceName);
-      }
-
-      const speedVal = parseFloat(document.getElementById('optSpeed').value) || 1.0;
-      currentUtterance.rate = speedVal;
-      saveGeneralSetting('pref_speed', speedVal);
-
-      if (animFrameReq) cancelAnimationFrame(animFrameReq);
-      let progress = 0;
-      function animateProgress() {
-        if (isPlaying) {
-          progress = (progress + 0.2) % 100;
-          if (STATE.mode === 'audio') document.getElementById('audioProgressBar').style.width = progress + '%';
-          document.getElementById('visProgressBar').style.width = progress + '%';
-          animFrameReq = requestAnimationFrame(animateProgress);
-        }
-      }
-      animFrameReq = requestAnimationFrame(animateProgress);
-
-      currentUtterance.onboundary = (e) => {
-        if (e.name === 'word' && typeof e.charIndex === 'number') {
-          const newOffset = startOffset + e.charIndex;
-          if (newOffset > currentWordOffset && newOffset < startOffset + startText.length) {
-            currentWordOffset = newOffset;
-            if (isVisualMode) updateVisualChunk();
-            else highlightCurrentWord();
-            saveProgress();
-          }
-        }
-      };
-
-      currentUtterance.onstart = () => {
-        document.getElementById('silentAudio').play().catch(()=>{});
-        initAudioContext();
-        if (isVisualMode) updateVisualChunk();
-        else highlightCurrentWord();
-        localStorage.setItem('last_played_book_id', currentBookId);
-        const book = allBooks.find(b => b.id === currentBookId);
-        localStorage.setItem('last_played_book_title', book?.title_ml || book?.title_ar || 'Book');
-      };
-
-      currentUtterance.onend = () => {
-        if (isPlaying && !isVoiceChanging) {
-          const autoNext = document.getElementById('optAutoNext')?.checked !== false;
-          if (autoNext && currentPageIndex < totalPages - 1) {
-            currentWordOffset = 0;
-            nextPage();
-          } else { stopAudio(); }
-        }
-      };
-
-      currentUtterance.onerror = (e) => {
-        if (e.error !== 'canceled' && isPlaying && !isVoiceChanging) {
-          if (currentPageIndex < totalPages - 1) { currentWordOffset = 0; nextPage(); }
-          else stopAudio();
-        }
-      };
-
-      synth.speak(currentUtterance);
-    }
-
-    function stopAudio() {
-      isVoiceChanging = true;
-      synth.cancel();
-      isPlaying = false;
-      currentUtterance = null;
-      updatePlayIcon();
-      if (animFrameReq) cancelAnimationFrame(animFrameReq);
-      document.getElementById('audioProgressBar').style.width = '0%';
-      document.getElementById('visProgressBar').style.width = '0%';
-      document.getElementById('silentAudio').pause();
-      if (wakeLock) { wakeLock.release().catch(()=>{}); wakeLock = null; }
-      document.querySelectorAll('.word-hl, .word-hl-ar, .word-hl-ml, .word-hl-en').forEach(el => {
-        el.classList.remove('word-hl', 'word-hl-ar', 'word-hl-ml', 'word-hl-en');
-      });
-      setTimeout(() => { isVoiceChanging = false; }, 100);
-    }
-
-    function updatePlayIcon() {
-      const icon = isPlaying ? 'fa-pause' : 'fa-play';
-      document.getElementById('miniPlayIcon').className = `fas ${icon}`;
-      document.getElementById('audioPlayBtn').className = `fas ${icon} play-big`;
-      document.getElementById('visPlayBtn').className = `fas ${icon} vis-play`;
-    }
-
-    function applyAudioSettings(restart) {
-      if (restart && isPlaying) {
-        isVoiceChanging = true;
-        synth.cancel();
-        setTimeout(() => { isVoiceChanging = false; playAudio(); }, 200);
-      }
-    }
-
-    function updateAudioUI() {
-      const page = currentPages[currentPageIndex];
-      if (!page) return;
-      const mlText = (page.Malayalam || '').replace(/<[^>]+>/g, '').trim();
-      document.getElementById('audioTitle').textContent = mlText.substring(0, 50) + '...';
-      document.getElementById('audioMeta').textContent = `ഭാഗം ${page.part || '?'} - പേജ് ${page.page || '?'} / ${totalPages}`;
-    }
-
-    function setSpokenLang(lang) {
-      spokenLang = lang;
-      document.querySelectorAll('.lang-btn').forEach(el => el.classList.remove('active'));
-      document.getElementById('lang-' + lang).classList.add('active');
-      saveGeneralSetting('pref_spoken_lang', lang);
-
-      const langMap = { 'ar': 'ar-EG', 'ml': 'ml-IN', 'en': 'en-US' };
-      document.getElementById('optAudioLang').value = langMap[lang];
-      setupVoices();
-
-      if (isPlaying) {
-        isVoiceChanging = true;
-        synth.cancel();
-        setTimeout(() => { isVoiceChanging = false; playAudio(); }, 200);
-      }
-
-      if (isVisualMode) updateVisualChunk();
-      else highlightCurrentWord();
-    }
-
-    function switchView(mode) {
-      STATE.mode = mode;
-      document.getElementById('ebookView').style.display = mode === 'ebook' ? 'block' : 'none';
-      document.getElementById('audioView').style.display = mode === 'audio' ? 'block' : 'none';
-      document.getElementById('visualView').style.display = mode === 'visual' ? 'block' : 'none';
-
-      document.querySelectorAll('.nav-tab').forEach(el => el.classList.remove('active'));
-      const tab = document.getElementById('nav-' + mode);
-      if (tab) tab.classList.add('active');
-
-      if (mode === 'visual') openVisualMode();
-      else {
-        closeVisualMode();
-        if (isPlaying) highlightCurrentWord();
-      }
-    }
-
-    function toggleBookmark() {
-      if (!currentBookId || !currentPages.length) return;
-      const chunk = currentPages[currentPageIndex];
-      if (!chunk) return;
-
-      const key = `bookmarks_${currentBookId}`;
-      let bookmarks = JSON.parse(localStorage.getItem(key) || '[]');
-      const exists = bookmarks.find(b => b.sequence === chunk.sequence);
-
-      if (exists) bookmarks = bookmarks.filter(b => b.sequence !== chunk.sequence);
-      else bookmarks.push({ sequence: chunk.sequence, part: chunk.part, page: chunk.page });
-
-      localStorage.setItem(key, JSON.stringify(bookmarks));
-      updateBookmarkUI();
-    }
-
-    function updateBookmarkUI() {
-      if (!currentBookId || !currentPages.length) return;
-      const chunk = currentPages[currentPageIndex];
-      if (!chunk) return;
-
-      const key = `bookmarks_${currentBookId}`;
-      const bookmarks = JSON.parse(localStorage.getItem(key) || '[]');
-      const exists = bookmarks.find(b => b.sequence === chunk.sequence);
-      document.getElementById('readerBookmark').classList.toggle('active-bm', !!exists);
-    }
-
-    function buildTOCData() {
-      if (!currentPages || currentPages.length === 0) return;
-
-      tocTree = [];
-      let currentPart = null, currentH1 = null, currentH2 = null, currentH3 = null;
-
-      currentPages.forEach((page, index) => {
-        if (!page) return;
-        const arText = page.Arabic || '';
-        const mlText = (page.Malayalam || '').replace(/<[^>]+>/g, '').trim().substring(0, 30);
-        const enText = (page.English || '').replace(/<[^>]+>/g, '').trim().substring(0, 30);
-
-        const partName = page.part || "1";
-        if (!currentPart || currentPart.name !== partName) {
-          currentPart = { type: 'part', name: partName, title: `ഭാഗം ${partName}`, children: [], index: index, page: page.page };
-          tocTree.push(currentPart);
-          currentH1 = null; currentH2 = null; currentH3 = null;
-        }
-
-        const h1Match = arText.match(/<h1[^>]*>(.*?)<\/h1>/i);
-        const h2Match = arText.match(/<h2[^>]*>(.*?)<\/h2>/i);
-        const h3Match = arText.match(/<h3[^>]*>(.*?)<\/h3>/i);
-
-        if (h1Match) {
-          currentH1 = { type: 'h1', title: h1Match[1].replace(/<[^>]+>/g, '').trim(), subtitle: mlText || enText, children: [], index: index, page: page.page };
-          currentPart.children.push(currentH1);
-          currentH2 = null; currentH3 = null;
-        } else if (h2Match) {
-          currentH2 = { type: 'h2', title: h2Match[1].replace(/<[^>]+>/g, '').trim(), subtitle: mlText || enText, children: [], index: index, page: page.page };
-          if (currentH1) currentH1.children.push(currentH2);
-          else currentPart.children.push(currentH2);
-          currentH3 = null;
-        } else if (h3Match) {
-          currentH3 = { type: 'h3', title: h3Match[1].replace(/<[^>]+>/g, '').trim(), subtitle: mlText || enText, children: [], index: index, page: page.page };
-          if (currentH2) currentH2.children.push(currentH3);
-          else if (currentH1) currentH1.children.push(currentH3);
-          else currentPart.children.push(currentH3);
-        } else if (index % 5 === 0 || index === currentPageIndex || index === 0) {
-          const node = { type: 'page', title: `പേജ് ${page.page || index + 1}`, subtitle: mlText.substring(0, 25) + '...', children: [], index: index, page: page.page };
-          if (currentH3) currentH3.children.push(node);
-          else if (currentH2) currentH2.children.push(node);
-          else if (currentH1) currentH1.children.push(node);
-          else currentPart.children.push(node);
-        }
-      });
-    }
-
-    function openTOC() {
-      if (!currentBookId || !currentPages.length) return;
-      buildTOCData();
-
-      document.getElementById('modalOverlay').classList.add('show');
-      document.getElementById('tocModal').classList.add('show');
-
-      tocPath = [{ title: 'Home', nodes: tocTree }];
-      renderTOCLevel();
-    }
-
-    function renderTOCLevel() {
-      const currentLevel = tocPath[tocPath.length - 1];
-      const breadcrumb = document.getElementById('tocBreadcrumb');
-      if (breadcrumb) {
-        breadcrumb.innerHTML = tocPath.map((p, i) => `<span onclick="navTOC(${i})">${p.title}</span>`).join(' <i class="fas fa-angle-right"></i> ');
-      }
-
-      const list = document.getElementById('tocList');
-      let html = `
-        <div class="jump-to-page-container">
-          <input type="number" id="jumpPageInput" min="1" max="${totalPages}" placeholder="Jump to page...">
-          <button onclick="jumpToPageNumber()"><i class="fas fa-arrow-right"></i> Go</button>
-        </div>
-      `;
-
-      if (currentLevel.nodes && currentLevel.nodes.length > 0) {
-        const sortedNodes = [...currentLevel.nodes].sort((a, b) => (a.index || 0) - (b.index || 0));
-
-        sortedNodes.forEach((node, idx) => {
-          const isCurrent = node.index === currentPageIndex;
-          const hasChildren = node.children && node.children.length > 0;
-          const typeIcon = { part: '📚', h1: '📑', h2: '📄', h3: '🔹', page: '📌' }[node.type] || '📄';
-
-          html += `
-            <div class="toc-item ${isCurrent ? 'current' : ''}">
-              <div class="toc-item-row">
-                <div class="toc-clickable-area" onclick="jumpToPage(${node.index}); closeModal();">
-                  <div class="toc-badge">${typeIcon} ${node.type.toUpperCase()} ${node.page ? '- പേജ് ' + node.page : ''}</div>
-                  <div class="toc-title-text" dir="rtl">${node.title}</div>
-                  ${node.subtitle ? `<div class="toc-translations">${node.subtitle}</div>` : ''}
-                </div>
-                ${hasChildren ? `<div class="toc-toggle-btn" onclick="drillTOC(${idx})"><i class="fas fa-chevron-right"></i></div>` : ''}
-              </div>
-            </div>
-          `;
-        });
-      } else {
-        html = '<div style="padding:20px;text-align:center;color:var(--text-muted);">📭 No content available</div>';
-      }
-
-      list.innerHTML = html;
-    }
-
-    function drillTOC(idx) {
-      const node = tocPath[tocPath.length - 1].nodes[idx];
-      if (node && node.children && node.children.length > 0) {
-        tocPath.push({ title: node.title.substring(0, 15) + '...', nodes: node.children });
-        renderTOCLevel();
-      }
-    }
-
-    function navTOC(pathIndex) {
-      tocPath = tocPath.slice(0, pathIndex + 1);
-      renderTOCLevel();
-    }
-
-    function jumpToPageNumber() {
-      const input = document.getElementById('jumpPageInput');
-      if (!input) return;
-      const pageNum = parseInt(input.value);
-      if (pageNum > 0 && pageNum <= totalPages) {
-        closeModal();
-        jumpToPage(pageNum - 1);
-      }
-    }
-
-    function openSettings() {
-      document.getElementById('modalOverlay').classList.add('show');
-      document.getElementById('settingsModal').classList.add('show');
-      updateIDBStatusMsg();
-    }
-
-    function closeModal() {
-      document.getElementById('modalOverlay').classList.remove('show');
-      document.querySelectorAll('.modal-box').forEach(el => el.classList.remove('show'));
-    }
-
-    function goHome() { closeReader(); }
-
-    function saveGeneralSetting(key, val) {
-      localStorage.setItem(key, typeof val === 'object' ? JSON.stringify(val) : val);
-      IDB.setMeta(key, val);
-    }
-
-    function setTheme(theme) {
-      STATE.theme = theme;
-      document.documentElement.setAttribute('data-theme', theme);
-      saveGeneralSetting('m_rb_theme', theme);
-      document.querySelectorAll('.theme-btn').forEach(el => el.classList.remove('active'));
-      document.getElementById('th-' + theme).classList.add('active');
-    }
-
-    function applyFontSize() {
-      const size = document.getElementById('optFontSize').value;
-      document.documentElement.style.setProperty('--font-scale', size + 'px');
-      saveGeneralSetting('m_rb_fsize', size);
-      if(!document.getElementById('optVerticalScroll').checked) renderCurrentPage();
-    }
-
-    function applyFonts() {
-      const ml = document.getElementById('optFontMl').value;
-      const ar = document.getElementById('optFontAr').value;
-      const en = document.getElementById('optFontEn').value;
-      document.documentElement.style.setProperty('--font-ml', ml);
-      document.documentElement.style.setProperty('--font-ar', ar);
-      document.documentElement.style.setProperty('--font-en', en);
-      saveGeneralSetting('pref_font_ml', ml);
-      saveGeneralSetting('pref_font_ar', ar);
-      saveGeneralSetting('pref_font_en', en);
-      if(!document.getElementById('optVerticalScroll').checked) renderCurrentPage();
-    }
-
-    function renderAllViews() {
-      STATE.showAr = document.getElementById('optShowAr').checked;
-      STATE.showMl = document.getElementById('optShowMl').checked;
-      STATE.showEn = document.getElementById('optShowEn').checked;
-      saveGeneralSetting('pref_show_ar', STATE.showAr);
-      saveGeneralSetting('pref_show_ml', STATE.showMl);
-      saveGeneralSetting('pref_show_en', STATE.showEn);
-      renderCurrentPage();
-    }
-
-    function handleBgMusic() {
-      const opt = document.getElementById('optBgMusic').value;
-      saveGeneralSetting('pref_bg_music', opt);
-      const bg = document.getElementById('bgMusic');
-      const rain = document.getElementById('ambRain');
-      const wind = document.getElementById('ambWind');
-      bg.pause(); rain.pause(); wind.pause();
-      if (opt === 'nasheed') { bg.volume = 0.1; bg.play().catch(()=>{}); }
-      else if (opt === 'rain') { rain.volume = 0.1; rain.play().catch(()=>{}); }
-      else if (opt === 'wind') { wind.volume = 0.1; wind.play().catch(()=>{}); }
-    }
-
     async function updateIDBStatusMsg() {
       const div = document.getElementById('idbStatusMsg');
-      if (!div || !currentBookId) return;
+      if (!div || !currentBookId) {
+        if (div) div.innerHTML = '📭 Open a book to see download status';
+        return;
+      }
       try {
         const has = await IDB.get(currentBookId);
-        div.innerHTML = (has && has.length > 0) ? `✅ ${has.length} pages stored in IndexedDB` : '📥 Book not downloaded yet';
-      } catch(e) { div.innerHTML = '⚠️ Error checking storage'; }
+        if (has && has.length > 0) {
+          div.innerHTML = `✅ ${has.length} pages stored in IndexedDB`;
+        } else {
+          div.innerHTML = '📥 Book not downloaded yet';
+        }
+      } catch(e) {
+        div.innerHTML = '⚠️ Error checking storage';
+      }
     }
 
     async function updateStorageInfo() {
       try {
-        let totalPagesCount = 0, totalSize = 0, downloadedCount = 0;
+        let totalPagesCount = 0;
+        let totalSize = 0;
+        let downloadedCount = 0;
+
         for (const book of allBooks) {
           const data = await IDB.get(book.id);
           if (data && data.length > 0) {
@@ -2665,29 +2980,39 @@
             book.downloaded = true;
             totalPagesCount += data.length;
             totalSize += data.reduce((sum, c) => sum + (c.Arabic || '').length + (c.Malayalam || '').length + (c.English || '').length, 0);
-          } else { book.downloaded = false; }
+          } else {
+            book.downloaded = false;
+          }
         }
+
         document.getElementById('storageBooks').textContent = downloadedCount;
         document.getElementById('storagePages').textContent = totalPagesCount.toLocaleString();
         document.getElementById('storageSize').textContent = (totalSize / 1024 / 1024).toFixed(1) + ' MB';
-      } catch(err) {}
+      } catch(err) {
+        console.error('Storage info error:', err);
+      }
     }
 
     async function clearAllData() {
-      if (!confirm('⚠️ Remove all downloaded books and data?')) return;
+      if (!confirm('⚠️ Remove all downloaded books and data? This cannot be undone!')) return;
+
       try {
         for (const book of allBooks) {
           await IDB.delete(book.id);
           localStorage.removeItem(`progress_${book.id}`);
           localStorage.removeItem(`bookmarks_${book.id}`);
           book.downloaded = false;
+          book.total_pages = 0;
         }
         await IDB.setMeta('downloaded_books', JSON.stringify([]));
         localStorage.setItem('library_books', JSON.stringify(allBooks));
+        dbCache = {};
         renderBooks(allBooks);
         updateStorageInfo();
         alert('✅ All data cleared!');
-      } catch(err) { alert('Error: ' + err.message); }
+      } catch(err) {
+        alert('Error clearing data: ' + err.message);
+      }
     }
 
     function showLoading(text) {
@@ -2695,62 +3020,32 @@
       document.getElementById('loadingOverlay').classList.add('show');
     }
 
-    function hideLoading() { document.getElementById('loadingOverlay').classList.remove('show'); }
-
-    function loadPreferences() {
-      setTheme(localStorage.getItem('m_rb_theme') || 'light');
-      const size = localStorage.getItem('m_rb_fsize') || '18';
-      document.getElementById('optFontSize').value = size;
-      applyFontSize();
-
-      const ml = localStorage.getItem('pref_font_ml') || "'Manjari', sans-serif";
-      const ar = localStorage.getItem('pref_font_ar') || "'Amiri', serif";
-      const en = localStorage.getItem('pref_font_en') || "sans-serif";
-      if (document.getElementById('optFontMl')) {
-        document.getElementById('optFontMl').value = ml;
-        document.getElementById('optFontAr').value = ar;
-        document.getElementById('optFontEn').value = en;
-        applyFonts();
-      }
-
-      setSpokenLang(localStorage.getItem('pref_spoken_lang') || 'ar');
-      if (document.getElementById('optCaptionStyle')) document.getElementById('optCaptionStyle').value = localStorage.getItem('pref_caption_style') || 'style-karaoke';
-
-      touchSpeakEnabled = localStorage.getItem('pref_touch_speak') !== 'false';
-      if (document.getElementById('optTouchSpeak')) document.getElementById('optTouchSpeak').checked = touchSpeakEnabled;
-
-      autoScrollEnabled = localStorage.getItem('pref_auto_scroll') !== 'false';
-      if (document.getElementById('optAutoScroll')) document.getElementById('optAutoScroll').checked = autoScrollEnabled;
-
-      STATE.showDividers = localStorage.getItem('pref_show_dividers') !== 'false';
-      if (document.getElementById('optShowDividers')) document.getElementById('optShowDividers').checked = STATE.showDividers;
-
-      STATE.showAr = localStorage.getItem('pref_show_ar') !== 'false';
-      STATE.showMl = localStorage.getItem('pref_show_ml') !== 'false';
-      STATE.showEn = localStorage.getItem('pref_show_en') !== 'false';
-      if (document.getElementById('optShowAr')) document.getElementById('optShowAr').checked = STATE.showAr;
-      if (document.getElementById('optShowMl')) document.getElementById('optShowMl').checked = STATE.showMl;
-      if (document.getElementById('optShowEn')) document.getElementById('optShowEn').checked = STATE.showEn;
-
-      const scrollVertical = localStorage.getItem('pref_scroll_vertical') === 'true';
-      if (document.getElementById('optVerticalScroll')) {
-        document.getElementById('optVerticalScroll').checked = scrollVertical;
-        updateScrollDirection();
-      }
-
-      if (document.getElementById('optYoutubeId')) document.getElementById('optYoutubeId').value = localStorage.getItem('pref_youtube_id') || '';
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.remove('show');
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-      loadPreferences();
+    // ================================================================
+    // INIT
+    // ================================================================
+    document.addEventListener('DOMContentLoaded', async function() {
+      await loadPreferencesFromIDB();
       setupVoices();
       if (synth.onvoiceschanged !== undefined) synth.onvoiceschanged = setupVoices;
       initApp();
     });
 
+    // ================================================================
+    // SERVICE WORKER REGISTER (PWA)
+    // ================================================================
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js').catch(()=>{});
+        navigator.serviceWorker.register('sw.js')
+          .then(registration => {
+            console.log('✅ Service Worker registered successfully');
+          })
+          .catch(error => {
+            console.log('❌ Service Worker registration failed:', error);
+          });
       });
     }
   </script>
