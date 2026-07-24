@@ -1,0 +1,45 @@
+{
+  "name": "Islamic Digital Library Pro",
+  "short_name": "Islamic Library",
+  "description": "ഇസ്ലാമിക ഡിജിറ്റൽ ലൈബ്രറി - പൂർണ്ണ സുപ്രഭാതം",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1b4d3e",
+  "theme_color": "#1b4d3e",
+  "orientation": "portrait",
+  "scope": ".",
+  "categories": ["books", "education", "religion"],
+  "lang": "ml",
+  "dir": "ltr",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "📖 Continue Reading",
+      "short_name": "Read",
+      "description": "Continue reading your last book",
+      "url": "./index.html?action=continue",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "📚 All Books",
+      "short_name": "Books",
+      "description": "View all books",
+      "url": "./index.html?action=books",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
